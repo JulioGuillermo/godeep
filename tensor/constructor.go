@@ -3,9 +3,9 @@ package tensor
 import (
 	"math/rand"
 
-	"github.com/julioguillermo/neuralnetwork/v2/operation"
-	"github.com/julioguillermo/neuralnetwork/v2/tools"
-	"github.com/julioguillermo/neuralnetwork/v2/types"
+	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/tools"
+	"github.com/julioguillermo/godeep/types"
 )
 
 func initMat[T types.Number](shape []uint) *TensorMat[T] {

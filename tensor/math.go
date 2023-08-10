@@ -1,6 +1,6 @@
 package tensor
 
-import "github.com/julioguillermo/neuralnetwork/v2/types"
+import "github.com/julioguillermo/godeep/types"
 
 func Add[T types.Number](a, b Tensor[T]) Tensor[T] { return NewOp2[T](a, b, Op2Add) }
 func Sub[T types.Number](a, b Tensor[T]) Tensor[T] { return NewOp2[T](a, b, Op2Sub) }

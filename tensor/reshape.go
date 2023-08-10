@@ -1,10 +1,10 @@
 package tensor
 
 import (
-	"github.com/julioguillermo/neuralnetwork/v2/context"
-	"github.com/julioguillermo/neuralnetwork/v2/operation"
-	"github.com/julioguillermo/neuralnetwork/v2/tools"
-	"github.com/julioguillermo/neuralnetwork/v2/types"
+	"github.com/julioguillermo/godeep/context"
+	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/tools"
+	"github.com/julioguillermo/godeep/types"
 )
 
 type TensorReshape[T types.Number] struct {
@@ -26,6 +26,11 @@ func Flatten[T types.Number](t Tensor[T]) Tensor[T] {
 }
 
 func (p *TensorReshape[T]) BuildGraph(ctx *context.Context) error {
+	if p.builded {
+		return nil
+	}
+	p.builded = true
+
 	err := p.T.BuildGraph(ctx)
 	if err != nil {
 		return err

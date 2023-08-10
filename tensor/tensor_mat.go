@@ -4,20 +4,26 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/julioguillermo/neuralnetwork/v2/context"
-	"github.com/julioguillermo/neuralnetwork/v2/errors"
-	"github.com/julioguillermo/neuralnetwork/v2/operation"
-	"github.com/julioguillermo/neuralnetwork/v2/tools"
-	"github.com/julioguillermo/neuralnetwork/v2/types"
+	"github.com/julioguillermo/godeep/context"
+	"github.com/julioguillermo/godeep/errors"
+	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/tools"
+	"github.com/julioguillermo/godeep/types"
 )
 
 type TensorMat[T types.Number] struct {
 	Shape    []uint
 	MulIndex []uint
 	Operands []*operation.Operand[T]
+	builded  bool
 }
 
 func (p *TensorMat[T]) BuildGraph(ctx *context.Context) error {
+	if p.builded {
+		return nil
+	}
+	p.builded = true
+
 	for i := range p.Operands {
 		ctx.Push(&operation.Scalar[T]{Operand: p.Operands[i]})
 	}

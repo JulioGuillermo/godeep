@@ -1,11 +1,11 @@
 package tensor
 
 import (
-	"github.com/julioguillermo/neuralnetwork/v2/context"
-	"github.com/julioguillermo/neuralnetwork/v2/errors"
-	"github.com/julioguillermo/neuralnetwork/v2/operation"
-	"github.com/julioguillermo/neuralnetwork/v2/tools"
-	"github.com/julioguillermo/neuralnetwork/v2/types"
+	"github.com/julioguillermo/godeep/context"
+	"github.com/julioguillermo/godeep/errors"
+	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/tools"
+	"github.com/julioguillermo/godeep/types"
 )
 
 type OperDim byte
@@ -33,6 +33,11 @@ func DimMath[T types.Number](t Tensor[T], dim uint, oper OperDim) Tensor[T] {
 }
 
 func (p *TensorDimMath[T]) BuildGraph(ctx *context.Context) error {
+	if p.builded {
+		return nil
+	}
+	p.builded = true
+
 	if p.D >= uint(len(p.T.GetShape())) {
 		return errors.FmtNeuralError(
 			"Invalid subtensor dimension %d for a tensor with dimension %d",

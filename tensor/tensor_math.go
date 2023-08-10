@@ -1,9 +1,9 @@
 package tensor
 
 import (
-	"github.com/julioguillermo/neuralnetwork/v2/context"
-	"github.com/julioguillermo/neuralnetwork/v2/operation"
-	"github.com/julioguillermo/neuralnetwork/v2/types"
+	"github.com/julioguillermo/godeep/context"
+	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/types"
 )
 
 type OperTensor byte
@@ -29,6 +29,11 @@ func TensorMath[T types.Number](t Tensor[T], oper OperTensor) Tensor[T] {
 }
 
 func (p *TensorTensorMath[T]) BuildGraph(ctx *context.Context) error {
+	if p.builded {
+		return nil
+	}
+	p.builded = true
+
 	err := p.T.BuildGraph(ctx)
 	if err != nil {
 		return err

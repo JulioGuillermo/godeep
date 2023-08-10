@@ -1,8 +1,6 @@
 package activation
 
-import (
-	"github.com/julioguillermo/neuralnetwork/v2/types"
-)
+import "github.com/julioguillermo/godeep/types"
 
 type Activation[T types.Number] interface {
 	Activate(T) T

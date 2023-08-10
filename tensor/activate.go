@@ -1,9 +1,9 @@
 package tensor
 
 import (
-	"github.com/julioguillermo/neuralnetwork/v2/context"
-	"github.com/julioguillermo/neuralnetwork/v2/operation"
-	"github.com/julioguillermo/neuralnetwork/v2/types"
+	"github.com/julioguillermo/godeep/context"
+	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/types"
 )
 
 type TensorActivate[T types.Number] struct {
@@ -20,6 +20,11 @@ func Activate[T types.Number](t Tensor[T], f operation.Function[T]) Tensor[T] {
 }
 
 func (p *TensorActivate[T]) BuildGraph(ctx *context.Context) error {
+	if p.builded {
+		return nil
+	}
+	p.builded = true
+
 	err := p.T.BuildGraph(ctx)
 	if err != nil {
 		return err

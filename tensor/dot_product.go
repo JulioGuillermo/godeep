@@ -1,10 +1,10 @@
 package tensor
 
 import (
-	"github.com/julioguillermo/neuralnetwork/v2/context"
-	"github.com/julioguillermo/neuralnetwork/v2/operation"
-	"github.com/julioguillermo/neuralnetwork/v2/tools"
-	"github.com/julioguillermo/neuralnetwork/v2/types"
+	"github.com/julioguillermo/godeep/context"
+	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/tools"
+	"github.com/julioguillermo/godeep/types"
 )
 
 type TensorDotProduct[T types.Number] struct {
@@ -21,6 +21,11 @@ func DotProduct[T types.Number](a, b Tensor[T]) Tensor[T] {
 }
 
 func (p *TensorDotProduct[T]) BuildGraph(ctx *context.Context) error {
+	if p.builded {
+		return nil
+	}
+	p.builded = true
+
 	e := tools.GetEqShapeErr(p.A.GetShape(), p.B.GetShape())
 	if e != nil {
 		return e

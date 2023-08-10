@@ -1,6 +1,6 @@
 package tools
 
-import "github.com/julioguillermo/neuralnetwork/v2/errors"
+import "github.com/julioguillermo/godeep/errors"
 
 func GetIndexMul(shape []uint) []uint {
 	size := len(shape)

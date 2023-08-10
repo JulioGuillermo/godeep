@@ -3,7 +3,7 @@ package activation
 import (
 	"math"
 
-	"github.com/julioguillermo/neuralnetwork/v2/types"
+	"github.com/julioguillermo/godeep/types"
 )
 
 type Tanh[T types.Number] struct{}

@@ -1,11 +1,11 @@
 package layer
 
 import (
-	"github.com/julioguillermo/neuralnetwork/v2/activation"
-	"github.com/julioguillermo/neuralnetwork/v2/context"
-	"github.com/julioguillermo/neuralnetwork/v2/operation"
-	"github.com/julioguillermo/neuralnetwork/v2/tensor"
-	"github.com/julioguillermo/neuralnetwork/v2/types"
+	"github.com/julioguillermo/godeep/activation"
+	"github.com/julioguillermo/godeep/context"
+	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/tensor"
+	"github.com/julioguillermo/godeep/types"
 )
 
 type Layer[T types.Number] interface {

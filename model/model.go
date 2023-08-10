@@ -3,13 +3,13 @@ package model
 import (
 	"math/rand"
 
-	"github.com/julioguillermo/neuralnetwork/v2/context"
-	"github.com/julioguillermo/neuralnetwork/v2/errors"
-	"github.com/julioguillermo/neuralnetwork/v2/graph"
-	"github.com/julioguillermo/neuralnetwork/v2/layer"
-	"github.com/julioguillermo/neuralnetwork/v2/operation"
-	"github.com/julioguillermo/neuralnetwork/v2/tensor"
-	"github.com/julioguillermo/neuralnetwork/v2/types"
+	"github.com/julioguillermo/godeep/context"
+	"github.com/julioguillermo/godeep/errors"
+	"github.com/julioguillermo/godeep/graph"
+	"github.com/julioguillermo/godeep/layer"
+	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/tensor"
+	"github.com/julioguillermo/godeep/types"
 )
 
 type Model[T types.Number] struct {

@@ -1,12 +1,12 @@
 package layer
 
 import (
-	"github.com/julioguillermo/neuralnetwork/v2/activation"
-	"github.com/julioguillermo/neuralnetwork/v2/context"
-	"github.com/julioguillermo/neuralnetwork/v2/errors"
-	"github.com/julioguillermo/neuralnetwork/v2/operation"
-	"github.com/julioguillermo/neuralnetwork/v2/tensor"
-	"github.com/julioguillermo/neuralnetwork/v2/types"
+	"github.com/julioguillermo/godeep/activation"
+	"github.com/julioguillermo/godeep/context"
+	"github.com/julioguillermo/godeep/errors"
+	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/tensor"
+	"github.com/julioguillermo/godeep/types"
 )
 
 type Dense[T types.Number] struct {
@@ -31,6 +31,9 @@ type Dense[T types.Number] struct {
 	Activation activation.Activation[T]
 
 	Trainable bool
+
+	ffBuilded bool
+	bpBuilded bool
 }
 
 func NewDense[T types.Number](outs uint, act activation.Activation[T]) Layer[T] {
@@ -102,6 +105,11 @@ func (p *Dense[T]) Build() error {
 }
 
 func (p *Dense[T]) BuildFeedforward(ctx *context.Context) error {
+	if p.ffBuilded {
+		return nil
+	}
+	p.ffBuilded = true
+
 	if p.PreLayer != nil {
 		err := p.PreLayer.BuildFeedforward(ctx)
 		if err != nil {
@@ -162,6 +170,11 @@ func (p *Dense[T]) BuildBackpropagation(
 	ctx *context.Context,
 	Alpha, Momentum *operation.Operand[T],
 ) error {
+	if p.bpBuilded {
+		return nil
+	}
+	p.bpBuilded = true
+
 	inputs := p.Input.GetSize()
 	outputs := p.Output.GetSize()
 

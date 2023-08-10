@@ -1,6 +1,6 @@
 package operation
 
-import "github.com/julioguillermo/neuralnetwork/v2/types"
+import "github.com/julioguillermo/godeep/types"
 
 type Sum[T types.Number] struct {
 	*Operand[T]

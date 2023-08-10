@@ -3,8 +3,8 @@ package test
 import (
 	"testing"
 
-	"github.com/julioguillermo/neuralnetwork/v2/graph"
-	"github.com/julioguillermo/neuralnetwork/v2/tensor"
+	"github.com/julioguillermo/godeep/graph"
+	"github.com/julioguillermo/godeep/tensor"
 )
 
 func TestAdd(t *testing.T) {

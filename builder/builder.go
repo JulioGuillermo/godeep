@@ -1,9 +1,9 @@
 package builder
 
 import (
-	"github.com/julioguillermo/neuralnetwork/v2/layer"
-	"github.com/julioguillermo/neuralnetwork/v2/model"
-	"github.com/julioguillermo/neuralnetwork/v2/types"
+	"github.com/julioguillermo/godeep/layer"
+	"github.com/julioguillermo/godeep/model"
+	"github.com/julioguillermo/godeep/types"
 )
 
 type ModelBuilder[T types.Number] struct {

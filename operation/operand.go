@@ -1,8 +1,6 @@
 package operation
 
-import (
-	"github.com/julioguillermo/neuralnetwork/v2/types"
-)
+import "github.com/julioguillermo/godeep/types"
 
 type Operand[T types.Number] struct {
 	Value T

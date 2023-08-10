@@ -1,6 +1,6 @@
 package context
 
-import "github.com/julioguillermo/neuralnetwork/v2/operation"
+import "github.com/julioguillermo/godeep/operation"
 
 type node struct {
 	op   operation.Operation
