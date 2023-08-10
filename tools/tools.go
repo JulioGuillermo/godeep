@@ -1,6 +1,11 @@
 package tools
 
-import "github.com/julioguillermo/godeep/errors"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/julioguillermo/godeep/errors"
+)
 
 func GetIndexMul(shape []uint) []uint {
 	size := len(shape)
@@ -76,4 +81,17 @@ func GetEqShapeErr(s1, s2 []uint) error {
 		return errors.FmtNeuralError("Different shapes %d and %d at %d", s1[e], s2[e], e)
 	}
 	return nil
+}
+
+func ShapeStr(s []uint) string {
+	var sb strings.Builder
+	sb.WriteString("[")
+	for i, d := range s {
+		sb.WriteString(fmt.Sprint(d))
+		if i < len(s) {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteString("]")
+	return sb.String()
 }

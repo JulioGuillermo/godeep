@@ -5,11 +5,113 @@ import (
 
 	"github.com/julioguillermo/godeep/graph"
 	"github.com/julioguillermo/godeep/tensor"
+	"github.com/julioguillermo/godeep/tools"
 )
 
-func TestDotProduct(t *testing.T) {
-	m1 := tensor.NewNormRand[float32](50, 50, 20)
-	m2 := tensor.NewNormRand[float32](50, 50, 20)
+func TestDotProductVecVec(t *testing.T) {
+	t.Log("Vec Vec")
+
+	v1 := tensor.NewFromValues[float32]([]float32{1, 2, 9, 8}, 4)
+	v2 := tensor.NewFromValues[float32]([]float32{4, 3, 5, 8}, 4)
+	var R float32 = 119
+
+	r := tensor.DotProduct(v1, v2)
+	g, err := graph.NewGraph(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	g.Exec()
+
+	n, err := r.Get(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != R {
+		t.Errorf("Not good => %f and %f", n, R)
+	}
+}
+
+func TestDotProductMatVec(t *testing.T) {
+	t.Log("Mat Vec")
+
+	v := tensor.NewFromValues[float32]([]float32{1, 2}, 2)
+	m := tensor.NewFromValues[float32]([]float32{6, 5, 9, 8, 3, 4, 5, 6, 7, 2, 1, 4}, 2, 3, 2)
+	R := []float32{16, 25, 11, 17, 11, 9}
+
+	r := tensor.DotProduct(m, v)
+	g, err := graph.NewGraph(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	g.Exec()
+
+	s1 := m.GetShape()
+	s2 := r.GetShape()
+	for i, s := range s2 {
+		if s != s1[i] {
+			t.Errorf("Not good: shape at %d => %d and %d", i, s, s1[i])
+		}
+	}
+
+	for i, o := range r.GetOperands() {
+		if o.Value != R[i] {
+			t.Errorf("Not good at %d => %f and %f", i, o.Value, R[i])
+		}
+	}
+}
+
+func TestDotProductVecMat(t *testing.T) {
+	t.Log("Vec Mat")
+
+	v := tensor.NewFromValues[float32]([]float32{1, 2, 3}, 3)
+	m := tensor.NewFromValues[float32]([]float32{6, 5, 9, 8, 3, 4, 5, 6, 7, 2, 1, 4}, 2, 3, 2)
+	R := []float32{33, 33, 22, 22}
+
+	r := tensor.DotProduct(v, m)
+	g, err := graph.NewGraph(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	g.Exec()
+
+	s1 := m.GetShape()
+	s1[len(s1)-2] = s1[len(s1)-1]
+	s2 := r.GetShape()
+	for i, s := range s2 {
+		if s != s1[i] {
+			t.Errorf("Not good: shape at %d => %d and %d", i, s, s1[i])
+		}
+	}
+
+	t.Log(R)
+	t.Log(r)
+	for i, o := range r.GetOperands() {
+		if o.Value != R[i] {
+			t.Errorf("Not good at %d => %f and %f", i, o.Value, R[i])
+		}
+	}
+}
+
+func TestDotProductMatMat(t *testing.T) {
+	t.Log("Mat Mat")
+
+	m1 := tensor.NewFromValues[float32]([]float32{6, 5, 9, 8, 3, 4, 5, 6, 7, 2, 1, 4}, 2, 3, 2)
+	m2 := tensor.NewFromValues[float32](
+		[]float32{6, 5, 9, 8, 3, 4, 5, 6, 7, 2, 1, 4, 2, 2, 5, 4},
+		4,
+		2,
+		2,
+	)
+	R := []float32{
+		81, 70, 43, 54, 47, 32, 37, 32, 126, 109,
+		67, 84, 71, 50, 58, 50, 54, 47, 29, 36,
+		25, 22, 26, 22, 84, 73, 45, 56, 41, 34,
+		40, 34, 60, 51, 31, 40, 51, 22, 24, 22,
+		42, 37, 23, 28, 11, 18, 22, 18,
+	}
 
 	r := tensor.DotProduct(m1, m2)
 	g, err := graph.NewGraph(r)
@@ -19,18 +121,45 @@ func TestDotProduct(t *testing.T) {
 
 	g.Exec()
 
-	d1 := m1.GetData()
-	d2 := m2.GetData()
-	dp := float32(0)
-	for i := range d1 {
-		dp += d1[i] * d2[i]
-	}
-
-	res, err := r.Get(0)
+	err = tools.GetEqShapeErr(r.GetShape(), []uint{2, 3, 4, 2})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res != dp {
-		t.Fatal(res, "!=", dp)
+
+	t.Log(R)
+	t.Log(r)
+	for i, o := range r.GetOperands() {
+		if o.Value != R[i] {
+			t.Errorf("Not good at %d => %f and %f", i, o.Value, R[i])
+		}
+	}
+}
+
+func TestDotProductMatMat2(t *testing.T) {
+	t.Log("Mat Mat")
+
+	m1 := tensor.NewFromValues[float32]([]float32{6, 9, 8, 9, 8, 7}, 3, 2)
+	m2 := tensor.NewFromValues[float32]([]float32{3, 4, 5, 6}, 2, 2)
+	R := []float32{63, 78, 69, 86, 59, 74}
+
+	r := tensor.DotProduct(m1, m2)
+	g, err := graph.NewGraph(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	g.Exec()
+
+	err = tools.GetEqShapeErr(r.GetShape(), []uint{3, 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(R)
+	t.Log(r)
+	for i, o := range r.GetOperands() {
+		if o.Value != R[i] {
+			t.Errorf("Not good at %d => %f and %f", i, o.Value, R[i])
+		}
 	}
 }

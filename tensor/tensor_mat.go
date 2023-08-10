@@ -61,6 +61,11 @@ func (p *TensorMat[T]) GetOperand(index ...uint) (*operation.Operand[T], error) 
 	return p.Operands[ind], nil
 }
 
+func (p *TensorMat[T]) Bind(t Tensor[T]) error {
+	copy(p.Operands, t.GetOperands())
+	return nil
+}
+
 func (p *TensorMat[T]) LoadFromTensor(t Tensor[T]) error {
 	err := tools.GetEqShapeErr(p.Shape, t.GetShape())
 	if err != nil {

@@ -16,6 +16,7 @@ type Tensor[T types.Number] interface {
 	GetData() []T
 	LoadData([]T) error
 	LoadFromTensor(Tensor[T]) error
+	Bind(Tensor[T]) error
 
 	Get(...uint) (T, error)
 	Set(T, ...uint) error

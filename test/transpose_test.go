@@ -5,14 +5,18 @@ import (
 
 	"github.com/julioguillermo/godeep/graph"
 	"github.com/julioguillermo/godeep/tensor"
+	"github.com/julioguillermo/godeep/tools"
 )
 
 func TestTranspose(t *testing.T) {
-	m := tensor.NewFromValues([]float32{
-		1, 2, 3,
-		4, 5, 6,
-		7, 8, 9,
-	}, 3, 3)
+	m := tensor.NewFromValues(
+		[]float32{2, 3, 4, 6, 7, 5, 3, 2, 5, 85, 4, 7, 7, 8, 9, 5, 8, 5, 6, 4, 3, 5, 7, 4},
+		1,
+		3,
+		2,
+		4,
+	)
+	R := []float32{2, 5, 8, 7, 7, 3, 3, 85, 5, 5, 8, 5, 4, 4, 6, 3, 9, 7, 6, 7, 4, 2, 5, 4}
 
 	trans := tensor.Transpose[float32](m)
 
@@ -21,25 +25,16 @@ func TestTranspose(t *testing.T) {
 		t.Fatal(err)
 	}
 	g.Exec()
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	t.Log(trans)
 
-	for i := uint(0); i < m.GetShape()[0]; i++ {
-		for j := uint(0); j < m.GetShape()[1]; j++ {
-			v1, e := m.Get(i, j)
-			if e != nil {
-				t.Fatal(e)
-			}
-			v2, e := trans.Get(j, i)
-			if e != nil {
-				t.Fatal(e)
-			}
-			if v1 != v2 {
-				t.Fatal(v1, v2)
-			}
+	err = tools.GetEqShapeErr(trans.GetShape(), []uint{4, 2, 3, 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, o := range trans.GetData() {
+		if o != R[i] {
+			t.Fatalf("Fail at %d => %f and %f", i, R[i], o)
 		}
 	}
 }
