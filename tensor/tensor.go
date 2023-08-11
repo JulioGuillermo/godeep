@@ -24,4 +24,6 @@ type Tensor[T types.Number] interface {
 	Copy() Tensor[T]
 
 	BuildGraph(*context.Context) error
+
+	SetBuild(bool) Tensor[T]
 }

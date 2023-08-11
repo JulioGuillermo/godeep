@@ -31,6 +31,11 @@ func (p *TensorSubTensor[T]) BuildGraph(ctx *context.Context) error {
 	}
 	p.builded = true
 
+	err := p.T.BuildGraph(ctx)
+	if err != nil {
+		return err
+	}
+
 	if p.D >= uint(len(p.T.GetShape())) {
 		return errors.FmtNeuralError(
 			"Invalid subtensor dimension %d for a tensor with dimension %d",
@@ -45,7 +50,7 @@ func (p *TensorSubTensor[T]) BuildGraph(ctx *context.Context) error {
 			p.E,
 		)
 	}
-	if p.E >= p.T.GetShape()[p.D] {
+	if p.E > p.T.GetShape()[p.D] {
 		return errors.FmtNeuralError(
 			"Invalid subtensor range end %d for shape %d at dimension %d",
 			p.E,
@@ -53,18 +58,13 @@ func (p *TensorSubTensor[T]) BuildGraph(ctx *context.Context) error {
 			p.D,
 		)
 	}
-	if p.S >= p.T.GetShape()[p.D] {
+	if p.S > p.T.GetShape()[p.D] {
 		return errors.FmtNeuralError(
 			"Invalid subtensor range start %d for shape %d at dimension %d",
 			p.S,
 			p.T.GetShape()[p.D],
 			p.D,
 		)
-	}
-
-	err := p.T.BuildGraph(ctx)
-	if err != nil {
-		return err
 	}
 
 	p.Shape = p.T.GetShape()

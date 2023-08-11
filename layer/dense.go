@@ -10,115 +10,61 @@ import (
 )
 
 type Dense[T types.Number] struct {
-	Weights tensor.Tensor[T]
-	Bias    tensor.Tensor[T]
-
-	NWeights tensor.Tensor[T]
-	MWeights tensor.Tensor[T]
-	NBias    tensor.Tensor[T]
-	MBias    tensor.Tensor[T]
-	Alpha    *operation.Operand[T]
-	Momentum *operation.Operand[T]
-
-	PreLayer Layer[T]
-
-	Input tensor.Tensor[T]
-
-	Neta   tensor.Tensor[T]
-	Output tensor.Tensor[T]
-	Dif    tensor.Tensor[T]
-
-	Activation activation.Activation[T]
-
-	Trainable bool
-
-	ffBuilded bool
-	bpBuilded bool
+	Base[T]
 }
 
 func NewDense[T types.Number](outs uint, act activation.Activation[T]) Layer[T] {
 	outputs := tensor.NewZeros[T](outs)
-	return &Dense[T]{
-		Output:     outputs,
-		Activation: act,
-		Trainable:  true,
-	}
+
+	dense := &Dense[T]{}
+	dense.Output = outputs
+	dense.Activation = act
+	dense.Trainable = true
+
+	return dense
 }
 
 func NewInDense[T types.Number](ins, outs uint, act activation.Activation[T]) Layer[T] {
 	inputs := tensor.NewZeros[T](ins)
 	outputs := tensor.NewZeros[T](outs)
-	return &Dense[T]{
-		Input:      inputs,
-		Output:     outputs,
-		Activation: act,
-		Trainable:  true,
-	}
-}
 
-func (p *Dense[T]) GetInputs() tensor.Tensor[T] {
-	return p.Input
-}
+	dense := &Dense[T]{}
+	dense.Input = inputs
+	dense.Output = outputs
+	dense.Activation = act
+	dense.Trainable = true
 
-func (p *Dense[T]) GetOutputs() tensor.Tensor[T] {
-	return p.Output
-}
-
-func (p *Dense[T]) GetNetas() tensor.Tensor[T] {
-	return p.Neta
-}
-
-func (p *Dense[T]) GetDif() tensor.Tensor[T] {
-	return p.Dif
-}
-
-func (p *Dense[T]) GetActivation() activation.Activation[T] {
-	return p.Activation
-}
-
-func (p *Dense[T]) Conect(prelayer Layer[T]) {
-	p.PreLayer = prelayer
+	return dense
 }
 
 func (p *Dense[T]) Build() error {
-	if p.PreLayer != nil {
-		err := p.PreLayer.Build()
-		if err != nil {
-			return err
-		}
-		p.Input = p.PreLayer.GetOutputs()
-	}
-	if p.Input == nil {
-		return errors.FmtNeuralError("Invalid layer input => nil")
+	if p.CheckB() {
+		return nil
 	}
 
-	inputs := p.Input.GetSize()
-	outputs := p.Output.GetSize()
-
-	p.Neta = tensor.NewZeros[T](p.Output.GetShape()...)
-	p.Dif = tensor.NewZeros[T](p.Output.GetShape()...)
-
-	p.Bias = tensor.NewNormRand[T](outputs)
-	p.Weights = tensor.NewNormRand[T](outputs, inputs)
-
-	return nil
+	return p.PreBuild()
 }
 
 func (p *Dense[T]) BuildFeedforward(ctx *context.Context) error {
-	if p.ffBuilded {
+	if p.CheckFF() {
 		return nil
 	}
-	p.ffBuilded = true
-
-	if p.PreLayer != nil {
-		err := p.PreLayer.BuildFeedforward(ctx)
-		if err != nil {
-			return err
-		}
+	err := p.PreBuildFeedforward(ctx)
+	if err != nil {
+		return err
 	}
 
+	if p.Input == nil {
+		return errors.FmtNeuralError("Invalid layer input => nil")
+	}
 	inputs := p.Input.GetSize()
 	outputs := p.Output.GetSize()
+
+	p.Neta = tensor.NewZeros[T](outputs)
+	p.Dif = tensor.NewZeros[T](outputs)
+
+	p.Bias = tensor.NewNormRand[T](outputs)
+	p.Weights = tensor.NewNormRand[T](outputs, inputs)
 
 	for i := uint(0); i < outputs; i++ {
 		ops := make([]*operation.Operand[T], inputs+1)
@@ -170,10 +116,9 @@ func (p *Dense[T]) BuildBackpropagation(
 	ctx *context.Context,
 	Alpha, Momentum *operation.Operand[T],
 ) error {
-	if p.bpBuilded {
+	if p.CheckBP() {
 		return nil
 	}
-	p.bpBuilded = true
 
 	inputs := p.Input.GetSize()
 	outputs := p.Output.GetSize()
@@ -224,6 +169,19 @@ func (p *Dense[T]) BuildBackpropagation(
 			})
 		}
 	}
+
+	//mulDifAlpha := tensor.MulScalar(p.Dif, Alpha)
+	//mulBiasMomM := tensor.MulScalar(p.MBias, Momentum)
+	//deltaBias := tensor.Add(mulDifAlpha, mulBiasMomM)
+	//p.NBias = tensor.Add(p.Bias, deltaBias)
+	//err := p.NBias.BuildGraph(ctx)
+	//if err != nil {
+	//	return err
+	//}
+	//err = tensor.Transfer(ctx, mulDifAlpha, p.MBias)
+	//if err != nil {
+	//	return err
+	//}
 
 	for i := uint(0); i < outputs; i++ {
 		dif, err := p.Dif.GetOperand(i)
@@ -292,28 +250,5 @@ func (p *Dense[T]) BuildBackpropagation(
 		}
 	}
 
-	if p.PreLayer != nil {
-		return p.PreLayer.BuildBackpropagation(ctx, Alpha, Momentum)
-	}
-
-	return nil
-}
-
-func (p *Dense[T]) Fit() error {
-	if p.PreLayer != nil {
-		p.PreLayer.Fit()
-	}
-
-	if !p.Trainable {
-		return nil
-	}
-	err := p.Weights.LoadFromTensor(p.NWeights)
-	if err != nil {
-		return err
-	}
-	return p.Bias.LoadFromTensor(p.NBias)
-}
-
-func (p *Dense[T]) SetTrainable(t bool) {
-	p.Trainable = t
+	return p.PostBuildBackpropagation(ctx, Alpha, Momentum)
 }

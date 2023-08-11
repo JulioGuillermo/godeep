@@ -36,13 +36,13 @@ func (p *TensorOpScalar[T]) BuildGraph(ctx *context.Context) error {
 	}
 	p.builded = true
 
-	p.Shape = p.T.GetShape()
-	p.MulIndex = p.T.GetMulIndex()
-
 	err := p.T.BuildGraph(ctx)
 	if err != nil {
 		return err
 	}
+
+	p.Shape = p.T.GetShape()
+	p.MulIndex = p.T.GetMulIndex()
 
 	op := p.T.GetOperands()
 

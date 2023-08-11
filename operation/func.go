@@ -1,6 +1,8 @@
 package operation
 
-import "github.com/julioguillermo/godeep/types"
+import (
+	"github.com/julioguillermo/godeep/types"
+)
 
 type Function[T types.Number] func(T) T
 

@@ -67,7 +67,7 @@ func (p *TensorMat[T]) Bind(t Tensor[T]) error {
 }
 
 func (p *TensorMat[T]) LoadFromTensor(t Tensor[T]) error {
-	err := tools.GetEqShapeErr(p.Shape, t.GetShape())
+	err := tools.GetEqShapeErr("Loading operands from tensor", p.Shape, t.GetShape())
 	if err != nil {
 		return err
 	}
@@ -148,4 +148,9 @@ func (p *TensorMat[T]) Copy() Tensor[T] {
 		MulIndex: p.GetMulIndex(),
 		Operands: ops,
 	}
+}
+
+func (p *TensorMat[T]) SetBuild(b bool) Tensor[T] {
+	p.builded = b
+	return p
 }

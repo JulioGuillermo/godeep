@@ -37,6 +37,10 @@ func (p *TensorDimMath[T]) BuildGraph(ctx *context.Context) error {
 		return nil
 	}
 	p.builded = true
+	err := p.T.BuildGraph(ctx)
+	if err != nil {
+		return err
+	}
 
 	if p.D >= uint(len(p.T.GetShape())) {
 		return errors.FmtNeuralError(
@@ -44,10 +48,6 @@ func (p *TensorDimMath[T]) BuildGraph(ctx *context.Context) error {
 			p.D,
 			len(p.T.GetShape()),
 		)
-	}
-	err := p.T.BuildGraph(ctx)
-	if err != nil {
-		return err
 	}
 
 	p.Shape = p.T.GetShape()[:p.D+1]

@@ -8,6 +8,9 @@ import (
 )
 
 func GetIndexMul(shape []uint) []uint {
+	if len(shape) == 0 {
+		return []uint{}
+	}
 	size := len(shape)
 	mulIndex := make([]uint, size)
 
@@ -72,13 +75,18 @@ func Equals(shape1, shape2 []uint) int {
 	return -1
 }
 
-func GetEqShapeErr(s1, s2 []uint) error {
+func GetEqShapeErr(msg string, s1, s2 []uint) error {
 	e := Equals(s1, s2)
 	if e == -2 {
-		return errors.FmtNeuralError("Shapes with different dimensions %d and %d", len(s1), len(s2))
+		return errors.FmtNeuralError(
+			"%s => Shapes with different dimensions %d and %d",
+			msg,
+			len(s1),
+			len(s2),
+		)
 	}
 	if e >= 0 {
-		return errors.FmtNeuralError("Different shapes %d and %d at %d", s1[e], s2[e], e)
+		return errors.FmtNeuralError("%s => Different shapes %d and %d at %d", msg, s1[e], s2[e], e)
 	}
 	return nil
 }

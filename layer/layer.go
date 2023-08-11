@@ -14,8 +14,9 @@ type Layer[T types.Number] interface {
 	GetNetas() tensor.Tensor[T]
 	GetDif() tensor.Tensor[T]
 	GetActivation() activation.Activation[T]
+	GetPrelayer() Layer[T]
 
-	Conect(Layer[T])
+	Connect(Layer[T])
 	Build() error
 	BuildFeedforward(*context.Context) error
 	BuildBackpropagation(*context.Context, *operation.Operand[T], *operation.Operand[T]) error

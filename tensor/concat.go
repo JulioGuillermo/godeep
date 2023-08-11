@@ -28,6 +28,14 @@ func (p *TensorConcat[T]) BuildGraph(ctx *context.Context) error {
 		return nil
 	}
 	p.builded = true
+	err := p.A.BuildGraph(ctx)
+	if err != nil {
+		return err
+	}
+	err = p.B.BuildGraph(ctx)
+	if err != nil {
+		return err
+	}
 
 	e := tools.Equals(p.A.GetShape(), p.B.GetShape())
 	if e == -2 {
@@ -44,14 +52,6 @@ func (p *TensorConcat[T]) BuildGraph(ctx *context.Context) error {
 			p.B.GetShape()[e],
 			e,
 		)
-	}
-	err := p.A.BuildGraph(ctx)
-	if err != nil {
-		return err
-	}
-	err = p.B.BuildGraph(ctx)
-	if err != nil {
-		return err
 	}
 
 	p.Shape = p.A.GetShape()

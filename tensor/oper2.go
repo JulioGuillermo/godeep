@@ -37,14 +37,6 @@ func (p *TensorOp2[T]) BuildGraph(ctx *context.Context) error {
 	}
 	p.builded = true
 
-	e := tools.GetEqShapeErr(p.A.GetShape(), p.B.GetShape())
-	if e != nil {
-		return e
-	}
-
-	p.Shape = p.A.GetShape()
-	p.MulIndex = p.A.GetMulIndex()
-
 	err := p.A.BuildGraph(ctx)
 	if err != nil {
 		return err
@@ -53,6 +45,14 @@ func (p *TensorOp2[T]) BuildGraph(ctx *context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	e := tools.GetEqShapeErr("Binary operation", p.A.GetShape(), p.B.GetShape())
+	if e != nil {
+		return e
+	}
+
+	p.Shape = p.A.GetShape()
+	p.MulIndex = p.A.GetMulIndex()
 
 	opA := p.A.GetOperands()
 	opB := p.B.GetOperands()

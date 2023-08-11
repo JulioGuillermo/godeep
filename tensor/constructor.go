@@ -75,3 +75,31 @@ func NewFromValues[T types.Number](values []T, shape ...uint) Tensor[T] {
 	mat.Operands = data
 	return mat
 }
+
+func NewScalar[T types.Number](val T) *operation.Operand[T] {
+	return &operation.Operand[T]{
+		Value: val,
+	}
+}
+
+func ScalarZero[T types.Number]() *operation.Operand[T] {
+	return &operation.Operand[T]{}
+}
+
+func ScalarOne[T types.Number]() *operation.Operand[T] {
+	return &operation.Operand[T]{
+		Value: 1,
+	}
+}
+
+func ScalarRand[T types.Number](min, max T) *operation.Operand[T] {
+	return &operation.Operand[T]{
+		Value: T(rand.Float64())*(max-min) + min,
+	}
+}
+
+func ScalarNorm[T types.Number]() *operation.Operand[T] {
+	return &operation.Operand[T]{
+		Value: T(rand.NormFloat64()),
+	}
+}

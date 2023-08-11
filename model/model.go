@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"math/rand"
 
 	"github.com/julioguillermo/godeep/context"
@@ -13,45 +14,63 @@ import (
 )
 
 type Model[T types.Number] struct {
-	LastLayer layer.Layer[T]
+	FirstLayer layer.Layer[T]
+	LastLayer  layer.Layer[T]
 
 	input    tensor.Tensor[T]
 	output   tensor.Tensor[T]
 	target   tensor.Tensor[T]
 	alpha    *operation.Operand[T]
 	momentum *operation.Operand[T]
+	loss     *operation.Operand[T]
 
 	feedForward     *graph.Graph
 	backPropagation *graph.Graph
 }
 
+func NewModel[T types.Number]() *Model[T] {
+	return &Model[T]{}
+}
+
 func FromInOut[T types.Number](in, out layer.Layer[T]) (*Model[T], error) {
-	err := out.Build()
+	return &Model[T]{
+		FirstLayer: in,
+		LastLayer:  out,
+	}, nil
+}
+
+func (p *Model[T]) Push(l layer.Layer[T]) *Model[T] {
+	if p.FirstLayer == nil {
+		p.FirstLayer = l
+		p.LastLayer = l
+		return p
+	}
+	l.Connect(p.LastLayer)
+	p.LastLayer = l
+	return p
+}
+
+func (p *Model[T]) Compile() error {
+	err := p.Build()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	ctx := &context.Context{}
-	err = out.BuildFeedforward(ctx)
+	err = p.BuildFeedforward(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	ff, err := graph.NewGraphFrom[T](ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	input := in.GetInputs()
-	output := out.GetOutputs()
-
-	return &Model[T]{
-		LastLayer: out,
-
-		feedForward: ff,
-
-		input:  input,
-		output: output,
-	}, nil
+	p.feedForward = ff
+	p.input = p.FirstLayer.GetInputs()
+	p.output = p.LastLayer.GetOutputs()
+	p.target = p.output.Copy()
+	return nil
 }
 
 func (p *Model[T]) buildBackPropagation() error {
@@ -60,7 +79,7 @@ func (p *Model[T]) buildBackPropagation() error {
 	p.alpha = &operation.Operand[T]{}
 	p.momentum = &operation.Operand[T]{}
 
-	dif := p.LastLayer.GetDif()
+	dif := p.LastLayer.GetDif().SetBuild(false)
 	p.target = tensor.NewZeros[T](p.output.GetShape()...)
 	out_ops := p.output.GetOperands()
 	tar_ops := p.target.GetOperands()
@@ -72,6 +91,11 @@ func (p *Model[T]) buildBackPropagation() error {
 			B:       out_ops[i],
 		})
 	}
+
+	loss := tensor.Abs(dif)
+	loss = tensor.Sum(loss)
+	loss.BuildGraph(ctx)
+	p.loss = loss.GetOperands()[0]
 
 	err := p.LastLayer.BuildBackpropagation(ctx, p.alpha, p.momentum)
 	if err != nil {
@@ -87,6 +111,12 @@ func (p *Model[T]) buildBackPropagation() error {
 }
 
 func (p *Model[T]) Predict(t tensor.Tensor[T]) (tensor.Tensor[T], error) {
+	if p.feedForward == nil {
+		err := p.Compile()
+		if err != nil {
+			return nil, err
+		}
+	}
 	err := p.input.LoadFromTensor(t)
 	if err != nil {
 		return nil, err
@@ -109,7 +139,26 @@ func (p *Model[T]) fit(x, y tensor.Tensor[T]) error {
 	return p.LastLayer.Fit()
 }
 
-func (p *Model[T]) Fit(
+func (p *Model[T]) TrainOne(
+	input, target tensor.Tensor[T],
+	alpha, momentum T,
+) (T, error) {
+	if p.backPropagation == nil {
+		err := p.buildBackPropagation()
+		if err != nil {
+			return -1, err
+		}
+	}
+	p.alpha.Value = alpha
+	p.momentum.Value = momentum
+	err := p.fit(input, target)
+	if err != nil {
+		return -1, err
+	}
+	return p.loss.Value, err
+}
+
+func (p *Model[T]) Train(
 	inputs, targets []tensor.Tensor[T],
 	epochs, batch uint,
 	alpha, momentum T,
@@ -140,6 +189,21 @@ func (p *Model[T]) Fit(
 				return err
 			}
 		}
+		if i%100 == 0 {
+			fmt.Printf(
+				"\r[%.2f%%] %d / %d => %f",
+				float64(i+1)*100/float64(epochs),
+				i,
+				epochs,
+				float64(p.loss.Value),
+			)
+		}
 	}
+	fmt.Printf(
+		"\r[100%%] %d / %d => %f\n",
+		epochs,
+		epochs,
+		float64(p.loss.Value),
+	)
 	return nil
 }
