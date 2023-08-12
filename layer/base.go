@@ -243,3 +243,12 @@ func (p *Base[T]) PushToString(sb *strings.Builder) {
 		),
 	)
 }
+
+func (p *Base[T]) String() string {
+	return fmt.Sprintf(
+		"<Layer[%d] => %s: O%s>",
+		p.Index,
+		p.Type,
+		tools.ShapeStr(p.Output.GetShape()),
+	)
+}

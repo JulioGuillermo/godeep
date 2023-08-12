@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/errors"
@@ -225,23 +226,29 @@ func (p *Model[T]) Train(
 	if batch == 0 {
 		batch = uint(len(inputs))
 	}
+	start := time.Now()
+	delta := time.Millisecond * 300
 	for i := uint(0); i < epochs; i++ {
-		for j := uint(0); j < batch; j++ {
+		for j := uint(1); j <= batch; j++ {
 			index := rand.Intn(len(inputs))
 			err := p.fit(inputs[index], targets[index])
 			if err != nil {
 				return err
 			}
+			if time.Since(start) > delta {
+				start = time.Now()
+				fmt.Printf(
+					"\r[%.2f%%] %d / %d => <%d / %d> %f",
+					float64(i)*100/float64(epochs),
+					i,
+					epochs,
+					j, batch,
+					float64(p.loss.Value),
+				)
+			}
 		}
-		if i%100 == 0 {
-			fmt.Printf(
-				"\r[%.2f%%] %d / %d => %f",
-				float64(i+1)*100/float64(epochs),
-				i,
-				epochs,
-				float64(p.loss.Value),
-			)
-		}
+		//if i%100 == 0 {
+		//}
 	}
 	fmt.Printf(
 		"\r[100%%] %d / %d => %f\n",

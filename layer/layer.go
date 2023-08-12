@@ -31,6 +31,7 @@ type Layer[T types.Number] interface {
 	ResetPrinted()
 
 	PushToString(sb *strings.Builder)
+	String() string
 
 	SetTrainable(bool)
 }
