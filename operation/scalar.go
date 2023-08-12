@@ -1,9 +1,12 @@
 package operation
 
-import "github.com/julioguillermo/godeep/types"
+import (
+	"github.com/julioguillermo/godeep/number"
+	"github.com/julioguillermo/godeep/types"
+)
 
 type Scalar[T types.Number] struct {
-	*Operand[T]
+	*number.Scalar[T]
 }
 
 // func (p *Scalar[_]) Lock()   {}

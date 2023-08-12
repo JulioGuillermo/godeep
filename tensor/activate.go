@@ -2,6 +2,7 @@ package tensor
 
 import (
 	"github.com/julioguillermo/godeep/context"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
 	"github.com/julioguillermo/godeep/types"
 )
@@ -32,13 +33,13 @@ func (p *TensorActivate[T]) BuildGraph(ctx *context.Context) error {
 
 	p.Shape = p.T.GetShape()
 	p.MulIndex = p.T.GetMulIndex()
-	p.Operands = make([]*operation.Operand[T], p.T.GetSize())
+	p.Operands = make([]*number.Scalar[T], p.T.GetSize())
 
 	ops := p.T.GetOperands()
 	for i := range p.Operands {
-		o := &operation.Operand[T]{}
+		o := &number.Scalar[T]{}
 		p.Operands[i] = o
-		ctx.Push(&operation.Func[T]{Operand: o, O: ops[i], F: p.F})
+		ctx.Push(&operation.Func[T]{Scalar: o, O: ops[i], F: p.F})
 	}
 
 	return nil

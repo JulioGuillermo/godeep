@@ -1,14 +1,15 @@
 package operation
 
 import (
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/types"
 )
 
 type Function[T types.Number] func(T) T
 
 type Func[T types.Number] struct {
-	*Operand[T]
-	O *Operand[T]
+	*number.Scalar[T]
+	O *number.Scalar[T]
 	F Function[T]
 }
 

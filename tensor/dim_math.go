@@ -3,6 +3,7 @@ package tensor
 import (
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/errors"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
 	"github.com/julioguillermo/godeep/tools"
 	"github.com/julioguillermo/godeep/types"
@@ -52,36 +53,36 @@ func (p *TensorDimMath[T]) BuildGraph(ctx *context.Context) error {
 
 	p.Shape = p.T.GetShape()[:p.D+1]
 	p.MulIndex = tools.GetIndexMul(p.Shape)
-	p.Operands = make([]*operation.Operand[T], tools.GetDataSize(p.Shape))
+	p.Operands = make([]*number.Scalar[T], tools.GetDataSize(p.Shape))
 
 	mi := p.T.GetMulIndex()[p.D]
 	ops := p.T.GetOperands()
 	for i := range p.Operands {
 		offset := uint(i) * mi
-		o := &operation.Operand[T]{}
+		o := &number.Scalar[T]{}
 		p.Operands[i] = o
 		args := ops[offset : offset+mi]
 
 		switch p.O {
 		case DimSum:
 			ctx.Push(&operation.Sum[T]{
-				Operand: o,
-				Args:    args,
+				Scalar: o,
+				Args:   args,
 			})
 		case DimAvg:
 			ctx.Push(&operation.Avg[T]{
-				Operand: o,
-				Args:    args,
+				Scalar: o,
+				Args:   args,
 			})
 		case DimMin:
 			ctx.Push(&operation.Min[T]{
-				Operand: o,
-				Args:    args,
+				Scalar: o,
+				Args:   args,
 			})
 		case DimMax:
 			ctx.Push(&operation.Max[T]{
-				Operand: o,
-				Args:    args,
+				Scalar: o,
+				Args:   args,
 			})
 		}
 	}

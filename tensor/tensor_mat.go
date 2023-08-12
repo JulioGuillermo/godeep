@@ -6,6 +6,7 @@ import (
 
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/errors"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
 	"github.com/julioguillermo/godeep/tools"
 	"github.com/julioguillermo/godeep/types"
@@ -14,7 +15,7 @@ import (
 type TensorMat[T types.Number] struct {
 	Shape    []uint
 	MulIndex []uint
-	Operands []*operation.Operand[T]
+	Operands []*number.Scalar[T]
 	builded  bool
 }
 
@@ -25,7 +26,7 @@ func (p *TensorMat[T]) BuildGraph(ctx *context.Context) error {
 	p.builded = true
 
 	for i := range p.Operands {
-		ctx.Push(&operation.Scalar[T]{Operand: p.Operands[i]})
+		ctx.Push(&operation.Scalar[T]{Scalar: p.Operands[i]})
 	}
 	return nil
 }
@@ -46,11 +47,11 @@ func (p *TensorMat[_]) GetMulIndex() []uint {
 	return s
 }
 
-func (p *TensorMat[T]) GetOperands() []*operation.Operand[T] {
+func (p *TensorMat[T]) GetOperands() []*number.Scalar[T] {
 	return p.Operands
 }
 
-func (p *TensorMat[T]) GetOperand(index ...uint) (*operation.Operand[T], error) {
+func (p *TensorMat[T]) GetOperand(index ...uint) (*number.Scalar[T], error) {
 	ind, err := tools.GetIndex(p.MulIndex, p.Shape, index)
 	if err != nil {
 		return nil, err
@@ -137,9 +138,9 @@ func (p *TensorMat[_]) String() string {
 }
 
 func (p *TensorMat[T]) Copy() Tensor[T] {
-	ops := make([]*operation.Operand[T], p.GetSize())
+	ops := make([]*number.Scalar[T], p.GetSize())
 	for i := range ops {
-		ops[i] = &operation.Operand[T]{
+		ops[i] = &number.Scalar[T]{
 			Value: p.Operands[i].Value,
 		}
 	}

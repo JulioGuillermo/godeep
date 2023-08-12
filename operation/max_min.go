@@ -1,10 +1,13 @@
 package operation
 
-import "github.com/julioguillermo/godeep/types"
+import (
+	"github.com/julioguillermo/godeep/number"
+	"github.com/julioguillermo/godeep/types"
+)
 
 type Max[T types.Number] struct {
-	*Operand[T]
-	Args []*Operand[T]
+	*number.Scalar[T]
+	Args []*number.Scalar[T]
 }
 
 func (p *Max[_]) Cal() {
@@ -23,8 +26,8 @@ func (p *Max[_]) Cal() {
 }
 
 type Min[T types.Number] struct {
-	*Operand[T]
-	Args []*Operand[T]
+	*number.Scalar[T]
+	Args []*number.Scalar[T]
 }
 
 func (p *Min[_]) Cal() {

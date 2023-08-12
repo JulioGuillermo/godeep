@@ -1,11 +1,14 @@
 package operation
 
-import "github.com/julioguillermo/godeep/types"
+import (
+	"github.com/julioguillermo/godeep/number"
+	"github.com/julioguillermo/godeep/types"
+)
 
 type Add[T types.Number] struct {
-	*Operand[T]
-	A *Operand[T]
-	B *Operand[T]
+	*number.Scalar[T]
+	A *number.Scalar[T]
+	B *number.Scalar[T]
 }
 
 func (p *Add[_]) Cal() {

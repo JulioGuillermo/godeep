@@ -3,7 +3,7 @@ package layer
 import (
 	"github.com/julioguillermo/godeep/activation"
 	"github.com/julioguillermo/godeep/context"
-	"github.com/julioguillermo/godeep/errors"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
 	"github.com/julioguillermo/godeep/tensor"
 	"github.com/julioguillermo/godeep/types"
@@ -17,6 +17,7 @@ func NewDense[T types.Number](outs uint, act activation.Activation[T]) Layer[T] 
 	outputs := tensor.NewZeros[T](outs)
 
 	dense := &Dense[T]{}
+	dense.Type = "Dense"
 	dense.Output = outputs
 	dense.Activation = act
 	dense.Trainable = true
@@ -29,6 +30,7 @@ func NewInDense[T types.Number](ins, outs uint, act activation.Activation[T]) La
 	outputs := tensor.NewZeros[T](outs)
 
 	dense := &Dense[T]{}
+	dense.Type = "Dense"
 	dense.Input = inputs
 	dense.Output = outputs
 	dense.Activation = act
@@ -37,12 +39,12 @@ func NewInDense[T types.Number](ins, outs uint, act activation.Activation[T]) La
 	return dense
 }
 
-func (p *Dense[T]) Build() error {
+func (p *Dense[T]) Build() (uint, error) {
 	if p.CheckB() {
-		return nil
+		return p.Index, nil
 	}
 
-	return p.PreBuild()
+	return p.Index, p.PreBuild()
 }
 
 func (p *Dense[T]) BuildFeedforward(ctx *context.Context) error {
@@ -55,7 +57,7 @@ func (p *Dense[T]) BuildFeedforward(ctx *context.Context) error {
 	}
 
 	if p.Input == nil {
-		return errors.FmtNeuralError("Invalid layer input => nil")
+		return p.Error("Invalid input => nil")
 	}
 	inputs := p.Input.GetSize()
 	outputs := p.Output.GetSize()
@@ -67,7 +69,7 @@ func (p *Dense[T]) BuildFeedforward(ctx *context.Context) error {
 	p.Weights = tensor.NewNormRand[T](outputs, inputs)
 
 	for i := uint(0); i < outputs; i++ {
-		ops := make([]*operation.Operand[T], inputs+1)
+		ops := make([]*number.Scalar[T], inputs+1)
 		bias, err := p.Bias.GetOperand(i)
 		if err != nil {
 			return err
@@ -75,7 +77,7 @@ func (p *Dense[T]) BuildFeedforward(ctx *context.Context) error {
 		ops[inputs] = bias
 
 		for j := uint(0); j < inputs; j++ {
-			mul_iw := &operation.Operand[T]{}
+			mul_iw := &number.Scalar[T]{}
 			ops[j] = mul_iw
 			weight, err := p.Weights.GetOperand(i, j)
 			if err != nil {
@@ -83,9 +85,9 @@ func (p *Dense[T]) BuildFeedforward(ctx *context.Context) error {
 			}
 			input := p.Input.GetOperands()[j]
 			ctx.Push(&operation.Mul[T]{
-				Operand: mul_iw,
-				A:       input,
-				B:       weight,
+				Scalar: mul_iw,
+				A:      input,
+				B:      weight,
 			})
 		}
 
@@ -94,8 +96,8 @@ func (p *Dense[T]) BuildFeedforward(ctx *context.Context) error {
 			return err
 		}
 		ctx.Push(&operation.Sum[T]{
-			Operand: neta,
-			Args:    ops,
+			Scalar: neta,
+			Args:   ops,
 		})
 
 		output, err := p.Output.GetOperand(i)
@@ -103,9 +105,9 @@ func (p *Dense[T]) BuildFeedforward(ctx *context.Context) error {
 			return err
 		}
 		ctx.Push(&operation.Func[T]{
-			Operand: output,
-			O:       neta,
-			F:       p.Activation.Activate,
+			Scalar: output,
+			O:      neta,
+			F:      p.Activation.Activate,
 		})
 	}
 
@@ -114,7 +116,7 @@ func (p *Dense[T]) BuildFeedforward(ctx *context.Context) error {
 
 func (p *Dense[T]) BuildBackpropagation(
 	ctx *context.Context,
-	Alpha, Momentum *operation.Operand[T],
+	Alpha, Momentum *number.Scalar[T],
 ) error {
 	if p.CheckBP() {
 		return nil
@@ -129,6 +131,11 @@ func (p *Dense[T]) BuildBackpropagation(
 	p.NBias = tensor.NewZeros[T](p.Bias.GetShape()...)
 	p.MBias = tensor.NewZeros[T](p.Bias.GetShape()...)
 
+	Dif := p.Dif
+	if p.Ref.Value > 1 {
+		Dif = tensor.DivScalar(Dif, p.Ref)
+	}
+
 	if p.PreLayer != nil {
 		der := tensor.Activate(p.PreLayer.GetNetas(), p.PreLayer.GetActivation().Derive)
 		err := der.BuildGraph(ctx)
@@ -137,9 +144,9 @@ func (p *Dense[T]) BuildBackpropagation(
 		}
 
 		for i := uint(0); i < inputs; i++ {
-			ops := make([]*operation.Operand[T], outputs)
+			ops := make([]*number.Scalar[T], outputs)
 			for j := uint(0); j < outputs; j++ {
-				dif, err := p.Dif.GetOperand(j)
+				dif, err := Dif.GetOperand(j)
 				if err != nil {
 					return err
 				}
@@ -147,25 +154,36 @@ func (p *Dense[T]) BuildBackpropagation(
 				if err != nil {
 					return err
 				}
-				o := &operation.Operand[T]{}
+				o := &number.Scalar[T]{}
 				ctx.Push(&operation.Mul[T]{
-					Operand: o,
-					A:       dif,
-					B:       w,
+					Scalar: o,
+					A:      dif,
+					B:      w,
 				})
 				ops[j] = o
 			}
-			sum := &operation.Operand[T]{}
+			sum := &number.Scalar[T]{}
 			ctx.Push(&operation.Sum[T]{
-				Operand: sum,
-				Args:    ops,
+				Scalar: sum,
+				Args:   ops,
 			})
-			pd := p.PreLayer.GetDif().GetOperands()[i]
 			d := der.GetOperands()[i]
+			nd := &number.Scalar[T]{}
+			pd := p.PreLayer.GetDif().GetOperands()[i]
 			ctx.Push(&operation.Mul[T]{
-				Operand: pd,
-				A:       sum,
-				B:       d,
+				Scalar: nd,
+				A:      sum,
+				B:      d,
+			})
+			npd := &number.Scalar[T]{}
+			ctx.Push(&operation.Add[T]{
+				Scalar: npd,
+				A:      pd,
+				B:      nd,
+			})
+			ctx.Push(&operation.Set[T]{
+				Scalar: pd,
+				O:      npd,
 			})
 		}
 	}
@@ -184,25 +202,25 @@ func (p *Dense[T]) BuildBackpropagation(
 	//}
 
 	for i := uint(0); i < outputs; i++ {
-		dif, err := p.Dif.GetOperand(i)
+		dif, err := Dif.GetOperand(i)
 		if err != nil {
 			return err
 		}
-		mul_dif_alpha := &operation.Operand[T]{}
+		mul_dif_alpha := &number.Scalar[T]{}
 		ctx.Push(&operation.Mul[T]{
-			Operand: mul_dif_alpha,
-			A:       dif,
-			B:       Alpha,
+			Scalar: mul_dif_alpha,
+			A:      dif,
+			B:      Alpha,
 		})
 		momentum, err := p.MBias.GetOperand(i)
 		if err != nil {
 			return err
 		}
-		moment := &operation.Operand[T]{}
+		moment := &number.Scalar[T]{}
 		ctx.Push(&operation.Mul[T]{
-			Operand: moment,
-			A:       momentum,
-			B:       Momentum,
+			Scalar: moment,
+			A:      momentum,
+			B:      Momentum,
 		})
 		bias, err := p.Bias.GetOperand(i)
 		if err != nil {
@@ -213,8 +231,8 @@ func (p *Dense[T]) BuildBackpropagation(
 			return err
 		}
 		ctx.Push(&operation.Sum[T]{
-			Operand: new_bias,
-			Args:    []*operation.Operand[T]{bias, moment, mul_dif_alpha},
+			Scalar: new_bias,
+			Args:   []*number.Scalar[T]{bias, moment, mul_dif_alpha},
 		})
 
 		for j := uint(0); j < inputs; j++ {
@@ -223,17 +241,17 @@ func (p *Dense[T]) BuildBackpropagation(
 			if err != nil {
 				return err
 			}
-			delta := &operation.Operand[T]{}
+			delta := &number.Scalar[T]{}
 			ctx.Push(&operation.Mul[T]{
-				Operand: delta,
-				A:       mul_dif_alpha,
-				B:       input,
+				Scalar: delta,
+				A:      mul_dif_alpha,
+				B:      input,
 			})
-			moment := &operation.Operand[T]{}
+			moment := &number.Scalar[T]{}
 			ctx.Push(&operation.Mul[T]{
-				Operand: moment,
-				A:       momentum,
-				B:       Momentum,
+				Scalar: moment,
+				A:      momentum,
+				B:      Momentum,
 			})
 			weight, err := p.Weights.GetOperand(i, j)
 			if err != nil {
@@ -244,8 +262,8 @@ func (p *Dense[T]) BuildBackpropagation(
 				return err
 			}
 			ctx.Push(&operation.Sum[T]{
-				Operand: new_weight,
-				Args:    []*operation.Operand[T]{weight, moment, delta},
+				Scalar: new_weight,
+				Args:   []*number.Scalar[T]{weight, moment, delta},
 			})
 		}
 	}

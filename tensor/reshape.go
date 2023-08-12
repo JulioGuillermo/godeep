@@ -2,7 +2,7 @@ package tensor
 
 import (
 	"github.com/julioguillermo/godeep/context"
-	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/tools"
 	"github.com/julioguillermo/godeep/types"
 )
@@ -37,7 +37,7 @@ func (p *TensorReshape[T]) BuildGraph(ctx *context.Context) error {
 	}
 
 	p.MulIndex = tools.GetIndexMul(p.Shape)
-	p.Operands = make([]*operation.Operand[T], tools.GetDataSize(p.Shape))
+	p.Operands = make([]*number.Scalar[T], tools.GetDataSize(p.Shape))
 
 	min := p.GetSize()
 	if min > p.T.GetSize() {
@@ -48,7 +48,7 @@ func (p *TensorReshape[T]) BuildGraph(ctx *context.Context) error {
 		p.Operands[i] = ops[i]
 	}
 	for i := min; i < p.GetSize(); i++ {
-		p.Operands[i] = &operation.Operand[T]{}
+		p.Operands[i] = &number.Scalar[T]{}
 	}
 
 	return nil

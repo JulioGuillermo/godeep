@@ -3,11 +3,13 @@ package model
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/errors"
 	"github.com/julioguillermo/godeep/graph"
 	"github.com/julioguillermo/godeep/layer"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
 	"github.com/julioguillermo/godeep/tensor"
 	"github.com/julioguillermo/godeep/types"
@@ -20,12 +22,14 @@ type Model[T types.Number] struct {
 	input    tensor.Tensor[T]
 	output   tensor.Tensor[T]
 	target   tensor.Tensor[T]
-	alpha    *operation.Operand[T]
-	momentum *operation.Operand[T]
-	loss     *operation.Operand[T]
+	alpha    *number.Scalar[T]
+	momentum *number.Scalar[T]
+	loss     *number.Scalar[T]
 
 	feedForward     *graph.Graph
 	backPropagation *graph.Graph
+	resetFit        *graph.Graph
+	reset           *graph.Graph
 }
 
 func NewModel[T types.Number]() *Model[T] {
@@ -51,7 +55,8 @@ func (p *Model[T]) Push(l layer.Layer[T]) *Model[T] {
 }
 
 func (p *Model[T]) Compile() error {
-	err := p.Build()
+	p.LastLayer.GetRef().Value++
+	_, err := p.Build()
 	if err != nil {
 		return err
 	}
@@ -66,7 +71,19 @@ func (p *Model[T]) Compile() error {
 	if err != nil {
 		return err
 	}
+
+	ctx = &context.Context{}
+	err = p.LastLayer.Reset(ctx)
+	if err != nil {
+		return err
+	}
+	reset, err := graph.NewGraphFrom[T](ctx)
+	if err != nil {
+		return err
+	}
+
 	p.feedForward = ff
+	p.reset = reset
 	p.input = p.FirstLayer.GetInputs()
 	p.output = p.LastLayer.GetOutputs()
 	p.target = p.output.Copy()
@@ -76,8 +93,8 @@ func (p *Model[T]) Compile() error {
 func (p *Model[T]) buildBackPropagation() error {
 	ctx := &context.Context{}
 
-	p.alpha = &operation.Operand[T]{}
-	p.momentum = &operation.Operand[T]{}
+	p.alpha = &number.Scalar[T]{}
+	p.momentum = &number.Scalar[T]{}
 
 	dif := p.LastLayer.GetDif().SetBuild(false)
 	p.target = tensor.NewZeros[T](p.output.GetShape()...)
@@ -86,9 +103,9 @@ func (p *Model[T]) buildBackPropagation() error {
 	dif_ops := dif.GetOperands()
 	for i := range tar_ops {
 		ctx.Push(&operation.Sub[T]{
-			Operand: dif_ops[i],
-			A:       tar_ops[i],
-			B:       out_ops[i],
+			Scalar: dif_ops[i],
+			A:      tar_ops[i],
+			B:      out_ops[i],
 		})
 	}
 
@@ -106,7 +123,30 @@ func (p *Model[T]) buildBackPropagation() error {
 	if err != nil {
 		return err
 	}
+
+	ctx = &context.Context{}
+	err = p.LastLayer.ResetFit(ctx)
+	if err != nil {
+		return err
+	}
+	rf, err := graph.NewGraphFrom[T](ctx)
+	if err != nil {
+		return err
+	}
+
 	p.backPropagation = bp
+	p.resetFit = rf
+	return nil
+}
+
+func (p *Model[T]) ResetIS() error {
+	if p.feedForward == nil {
+		err := p.Compile()
+		if err != nil {
+			return err
+		}
+	}
+	p.reset.Exec()
 	return nil
 }
 
@@ -126,6 +166,8 @@ func (p *Model[T]) Predict(t tensor.Tensor[T]) (tensor.Tensor[T], error) {
 }
 
 func (p *Model[T]) fit(x, y tensor.Tensor[T]) error {
+	p.resetFit.Exec()
+
 	err := p.input.LoadFromTensor(x)
 	if err != nil {
 		return err
@@ -134,8 +176,10 @@ func (p *Model[T]) fit(x, y tensor.Tensor[T]) error {
 	if err != nil {
 		return err
 	}
+
 	p.feedForward.Exec()
 	p.backPropagation.Exec()
+
 	return p.LastLayer.Fit()
 }
 
@@ -206,4 +250,14 @@ func (p *Model[T]) Train(
 		float64(p.loss.Value),
 	)
 	return nil
+}
+
+func (p *Model[T]) String() string {
+	p.ResetPrinted()
+
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("<Model => [\n"))
+	p.PushToString(&sb)
+	sb.WriteString("]>\n")
+	return sb.String()
 }

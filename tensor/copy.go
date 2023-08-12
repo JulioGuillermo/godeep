@@ -55,7 +55,7 @@ func (p *TensorCopy[T]) BuildGraph(ctx *context.Context) error {
 	opsT := p.T.GetOperands()
 	opsF := p.F.GetOperands()
 	for i := range p.Operands {
-		ctx.Push(&operation.Set[T]{Operand: opsT[i], O: opsF[i]})
+		ctx.Push(&operation.Set[T]{Scalar: opsT[i], O: opsF[i]})
 	}
 
 	return nil

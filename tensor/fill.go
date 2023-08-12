@@ -7,18 +7,25 @@ import (
 	"github.com/julioguillermo/godeep/types"
 )
 
-type TensorAbs[T types.Number] struct {
+type TensorFill[T types.Number] struct {
 	TensorMat[T]
 	T Tensor[T]
+	V *number.Scalar[T]
 }
 
-func Abs[T types.Number](t Tensor[T]) Tensor[T] {
-	return &TensorAbs[T]{
+func FillWith[T types.Number](t Tensor[T], v *number.Scalar[T]) Tensor[T] {
+	return &TensorFill[T]{
 		T: t,
+		V: v,
 	}
 }
 
-func (p *TensorAbs[T]) BuildGraph(ctx *context.Context) error {
+func Fill[T types.Number](ctx *context.Context, t Tensor[T], v *number.Scalar[T]) error {
+	cp := FillWith(t, v)
+	return cp.BuildGraph(ctx)
+}
+
+func (p *TensorFill[T]) BuildGraph(ctx *context.Context) error {
 	if p.builded {
 		return nil
 	}
@@ -31,13 +38,11 @@ func (p *TensorAbs[T]) BuildGraph(ctx *context.Context) error {
 
 	p.Shape = p.T.GetShape()
 	p.MulIndex = p.T.GetMulIndex()
-	p.Operands = make([]*number.Scalar[T], p.T.GetSize())
+	p.Operands = p.T.GetOperands()
 
 	ops := p.T.GetOperands()
 	for i := range p.Operands {
-		o := &number.Scalar[T]{}
-		p.Operands[i] = o
-		ctx.Push(&operation.Abs[T]{Scalar: o, O: ops[i]})
+		ctx.Push(&operation.Set[T]{Scalar: ops[i], O: p.V})
 	}
 
 	return nil

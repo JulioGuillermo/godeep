@@ -96,7 +96,7 @@ func ShapeStr(s []uint) string {
 	sb.WriteString("[")
 	for i, d := range s {
 		sb.WriteString(fmt.Sprint(d))
-		if i < len(s) {
+		if i < len(s)-1 {
 			sb.WriteString(", ")
 		}
 	}

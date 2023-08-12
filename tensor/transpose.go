@@ -2,7 +2,7 @@ package tensor
 
 import (
 	"github.com/julioguillermo/godeep/context"
-	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/tools"
 	"github.com/julioguillermo/godeep/types"
 )
@@ -37,7 +37,7 @@ func (p *TensorTanspose[T]) BuildGraph(ctx *context.Context) error {
 	}
 	p.MulIndex = tools.GetIndexMul(p.Shape)
 
-	p.Operands = make([]*operation.Operand[T], p.T.GetSize())
+	p.Operands = make([]*number.Scalar[T], p.T.GetSize())
 
 	return p.transposeRecursive(0, 0, []uint{})
 }

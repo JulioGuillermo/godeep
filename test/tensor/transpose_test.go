@@ -28,7 +28,11 @@ func TestTranspose(t *testing.T) {
 
 	t.Log(trans)
 
-	err = tools.GetEqShapeErr(trans.GetShape(), []uint{4, 2, 3, 1})
+	err = tools.GetEqShapeErr(
+		"Testing transpose result shape",
+		trans.GetShape(),
+		[]uint{4, 2, 3, 1},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

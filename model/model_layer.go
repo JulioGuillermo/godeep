@@ -1,30 +1,16 @@
 package model
 
 import (
+	"strings"
+
 	"github.com/julioguillermo/godeep/activation"
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/layer"
-	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/tensor"
 )
 
-func (p *Model[T]) Init() error {
-	return nil
-}
-
-func (p *Model[T]) FeedForward(*context.Context) error {
-	return nil
-}
-
-func (p *Model[T]) BackPropagation(
-	*context.Context,
-	*operation.Operand[T],
-	*operation.Operand[T],
-) error {
-	return nil
-}
-
-func (p *Model[T]) Build() error {
+func (p *Model[T]) Build() (uint, error) {
 	return p.LastLayer.Build()
 }
 
@@ -34,9 +20,17 @@ func (p *Model[T]) BuildFeedforward(ctx *context.Context) error {
 
 func (p *Model[T]) BuildBackpropagation(
 	ctx *context.Context,
-	a, m *operation.Operand[T],
+	a, m *number.Scalar[T],
 ) error {
 	return p.LastLayer.BuildBackpropagation(ctx, a, m)
+}
+
+func (p *Model[T]) Reset(ctx *context.Context) error {
+	return p.LastLayer.Reset(ctx)
+}
+
+func (p *Model[T]) ResetFit(ctx *context.Context) error {
+	return p.LastLayer.ResetFit(ctx)
 }
 
 func (p *Model[T]) Fit() error {
@@ -67,6 +61,10 @@ func (p *Model[T]) GetDif() tensor.Tensor[T] {
 	return p.LastLayer.GetDif()
 }
 
+func (p *Model[T]) GetRef() *number.Scalar[T] {
+	return p.LastLayer.GetRef()
+}
+
 func (p *Model[T]) GetActivation() activation.Activation[T] {
 	return p.LastLayer.GetActivation()
 }
@@ -77,4 +75,16 @@ func (p *Model[T]) GetPrelayer() layer.Layer[T] {
 
 func (p *Model[T]) Connect(l layer.Layer[T]) {
 	p.FirstLayer.Connect(l)
+}
+
+func (p *Model[T]) PushToString(sb *strings.Builder) {
+	p.LastLayer.PushToString(sb)
+}
+
+func (p *Model[T]) ResetPrinted() {
+	p.LastLayer.ResetPrinted()
+}
+
+func (p *Model[T]) GetIndex() uint {
+	return p.LastLayer.GetIndex()
 }

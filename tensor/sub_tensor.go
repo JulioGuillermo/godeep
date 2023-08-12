@@ -3,7 +3,7 @@ package tensor
 import (
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/errors"
-	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/tools"
 	"github.com/julioguillermo/godeep/types"
 )
@@ -71,7 +71,7 @@ func (p *TensorSubTensor[T]) BuildGraph(ctx *context.Context) error {
 	p.Shape[p.D] = p.E - p.S
 	p.MulIndex = tools.GetIndexMul(p.Shape)
 
-	p.Operands = make([]*operation.Operand[T], tools.GetDataSize(p.Shape))
+	p.Operands = make([]*number.Scalar[T], tools.GetDataSize(p.Shape))
 	p.subRecursive(0, 0, []uint{})
 
 	return nil

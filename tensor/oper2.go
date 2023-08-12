@@ -2,6 +2,7 @@ package tensor
 
 import (
 	"github.com/julioguillermo/godeep/context"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
 	"github.com/julioguillermo/godeep/tools"
 	"github.com/julioguillermo/godeep/types"
@@ -57,19 +58,19 @@ func (p *TensorOp2[T]) BuildGraph(ctx *context.Context) error {
 	opA := p.A.GetOperands()
 	opB := p.B.GetOperands()
 
-	p.Operands = make([]*operation.Operand[T], p.A.GetSize())
+	p.Operands = make([]*number.Scalar[T], p.A.GetSize())
 	for i := range p.Operands {
-		o := &operation.Operand[T]{}
+		o := &number.Scalar[T]{}
 		p.Operands[i] = o
 		switch p.O {
 		case Op2Add:
-			ctx.Push(&operation.Add[T]{Operand: o, A: opA[i], B: opB[i]})
+			ctx.Push(&operation.Add[T]{Scalar: o, A: opA[i], B: opB[i]})
 		case Op2Sub:
-			ctx.Push(&operation.Sub[T]{Operand: o, A: opA[i], B: opB[i]})
+			ctx.Push(&operation.Sub[T]{Scalar: o, A: opA[i], B: opB[i]})
 		case Op2Mul:
-			ctx.Push(&operation.Mul[T]{Operand: o, A: opA[i], B: opB[i]})
+			ctx.Push(&operation.Mul[T]{Scalar: o, A: opA[i], B: opB[i]})
 		case Op2Div:
-			ctx.Push(&operation.Div[T]{Operand: o, A: opA[i], B: opB[i]})
+			ctx.Push(&operation.Div[T]{Scalar: o, A: opA[i], B: opB[i]})
 		}
 	}
 

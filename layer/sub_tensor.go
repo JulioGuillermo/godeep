@@ -2,8 +2,7 @@ package layer
 
 import (
 	"github.com/julioguillermo/godeep/context"
-	"github.com/julioguillermo/godeep/errors"
-	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/tensor"
 	"github.com/julioguillermo/godeep/types"
 )
@@ -25,20 +24,20 @@ func NewSubTensor[T types.Number](dim, from, to uint) Layer[T] {
 	return l
 }
 
-func (p *SubTensor[T]) Build() error {
+func (p *SubTensor[T]) Build() (uint, error) {
 	if p.CheckB() {
-		return nil
+		return p.Index, nil
 	}
 
 	err := p.PreBuild()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if p.PreLayer == nil {
-		return errors.FmtNeuralError("SubTensor layer can not be input layer")
+		return 0, p.Error("This layer can not be input layer")
 	}
-	return nil
+	return p.Index, nil
 }
 
 func (p *SubTensor[T]) BuildFeedforward(ctx *context.Context) error {
@@ -69,14 +68,22 @@ func (p *SubTensor[T]) BuildFeedforward(ctx *context.Context) error {
 
 func (p *SubTensor[T]) BuildBackpropagation(
 	ctx *context.Context,
-	a, m *operation.Operand[T],
+	a, m *number.Scalar[T],
 ) error {
 	if p.CheckBP() {
 		return nil
 	}
 
+	Dif := p.Dif
+	if p.Ref.Value > 1 {
+		Dif = tensor.DivScalar(Dif, p.Ref)
+	}
+
 	p_dif := tensor.SubTensor[T](p.PreLayer.GetDif(), p.dim, p.from, p.to)
-	err := tensor.Transfer[T](ctx, p.Dif, p_dif)
+
+	Dif = tensor.Add[T](Dif, p_dif)
+
+	err := tensor.Transfer[T](ctx, Dif, p_dif)
 	if err != nil {
 		return err
 	}

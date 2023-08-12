@@ -3,6 +3,7 @@ package tensor
 import (
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/errors"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
 	"github.com/julioguillermo/godeep/tools"
 	"github.com/julioguillermo/godeep/types"
@@ -31,24 +32,24 @@ func (p *TensorDotProduct[T]) buildVector(ctx *context.Context) error {
 	}
 	op1 := p.A.GetOperands()
 	op2 := p.B.GetOperands()
-	ops := make([]*operation.Operand[T], len(op1))
+	ops := make([]*number.Scalar[T], len(op1))
 	for i := range ops {
-		o := &operation.Operand[T]{}
+		o := &number.Scalar[T]{}
 		ops[i] = o
 		ctx.Push(&operation.Mul[T]{
-			Operand: o,
-			A:       op1[i],
-			B:       op2[i],
+			Scalar: o,
+			A:      op1[i],
+			B:      op2[i],
 		})
 	}
 
-	o := &operation.Operand[T]{}
+	o := &number.Scalar[T]{}
 	ctx.Push(&operation.Sum[T]{
-		Operand: o,
-		Args:    ops,
+		Scalar: o,
+		Args:   ops,
 	})
 
-	p.Operands = []*operation.Operand[T]{o}
+	p.Operands = []*number.Scalar[T]{o}
 	p.Shape = []uint{1}
 	p.MulIndex = []uint{1}
 
@@ -80,7 +81,7 @@ func (p *TensorDotProduct[T]) buildMatVec(m, v Tensor[T], invert bool, ctx *cont
 		p.Shape[len(p.Shape)-1] = shape[len(shape)-1]
 	}
 	p.MulIndex = tools.GetIndexMul(p.Shape)
-	p.Operands = make([]*operation.Operand[T], tools.GetDataSize(p.Shape))
+	p.Operands = make([]*number.Scalar[T], tools.GetDataSize(p.Shape))
 
 	return p.buildMatVecRecursive(ctx, invert, m, v, 0, 0, []uint{})
 }
@@ -94,7 +95,7 @@ func (p *TensorDotProduct[T]) buildMatVecRecursive(
 	oIndex []uint,
 ) error {
 	if dim == uint(len(p.Shape)) {
-		ops := make([]*operation.Operand[T], v.GetSize())
+		ops := make([]*number.Scalar[T], v.GetSize())
 		for i, vo := range v.GetOperands() {
 			var ind []uint
 			if invert {
@@ -109,20 +110,20 @@ func (p *TensorDotProduct[T]) buildMatVecRecursive(
 			if e != nil {
 				return e
 			}
-			mul := &operation.Operand[T]{}
+			mul := &number.Scalar[T]{}
 			ops[i] = mul
 			ctx.Push(&operation.Mul[T]{
-				Operand: mul,
-				A:       vo,
-				B:       o,
+				Scalar: mul,
+				A:      vo,
+				B:      o,
 			})
 		}
 
-		sum := &operation.Operand[T]{}
+		sum := &number.Scalar[T]{}
 		p.Operands[index] = sum
 		ctx.Push(&operation.Sum[T]{
-			Operand: sum,
-			Args:    ops,
+			Scalar: sum,
+			Args:   ops,
 		})
 		return nil
 	}
@@ -157,9 +158,9 @@ func (p *TensorDotProduct[T]) buildMatMat(ctx *context.Context) error {
 
 	p.Shape = append(shA[:len(shA)-1], shB[:len(shB)-1]...)
 	p.MulIndex = tools.GetIndexMul(p.Shape)
-	p.Operands = make([]*operation.Operand[T], tools.GetDataSize(p.Shape))
+	p.Operands = make([]*number.Scalar[T], tools.GetDataSize(p.Shape))
 	for i := range p.Operands {
-		p.Operands[i] = &operation.Operand[T]{}
+		p.Operands[i] = &number.Scalar[T]{}
 	}
 
 	p.buildMatMatRecursive(ctx, uint(len(shA)-1), 0, []uint{}, []uint{}, []uint{})
@@ -176,7 +177,7 @@ func (p *TensorDotProduct[T]) buildMatMatRecursive(
 	indexB []uint,
 ) error {
 	if dim == uint(len(p.Shape)) {
-		ops := make([]*operation.Operand[T], p.A.GetShape()[sha])
+		ops := make([]*number.Scalar[T], p.A.GetShape()[sha])
 		for i := uint(0); i < p.A.GetShape()[sha]; i++ {
 			a, err := p.A.GetOperand(append(indexA, i)...)
 			if err != nil {
@@ -190,12 +191,12 @@ func (p *TensorDotProduct[T]) buildMatMatRecursive(
 			if err != nil {
 				return err
 			}
-			o := &operation.Operand[T]{}
+			o := &number.Scalar[T]{}
 			ops[i] = o
 			ctx.Push(&operation.Mul[T]{
-				Operand: o,
-				A:       a,
-				B:       b,
+				Scalar: o,
+				A:      a,
+				B:      b,
 			})
 		}
 		o, err := p.GetOperand(index...)
@@ -203,8 +204,8 @@ func (p *TensorDotProduct[T]) buildMatMatRecursive(
 			return err
 		}
 		ctx.Push(&operation.Sum[T]{
-			Operand: o,
-			Args:    ops,
+			Scalar: o,
+			Args:   ops,
 		})
 		return nil
 	}

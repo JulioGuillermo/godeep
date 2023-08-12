@@ -1,8 +1,8 @@
-package operation
+package number
 
 import "github.com/julioguillermo/godeep/types"
 
-type Operand[T types.Number] struct {
+type Scalar[T types.Number] struct {
 	Value T
 	// mutex sync.Mutex
 }

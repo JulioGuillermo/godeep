@@ -1,10 +1,13 @@
 package operation
 
-import "github.com/julioguillermo/godeep/types"
+import (
+	"github.com/julioguillermo/godeep/number"
+	"github.com/julioguillermo/godeep/types"
+)
 
 type Avg[T types.Number] struct {
-	*Operand[T]
-	Args []*Operand[T]
+	*number.Scalar[T]
+	Args []*number.Scalar[T]
 }
 
 func (p *Avg[T]) Cal() {

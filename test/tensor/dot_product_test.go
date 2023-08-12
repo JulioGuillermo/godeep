@@ -121,7 +121,7 @@ func TestDotProductMatMat(t *testing.T) {
 
 	g.Exec()
 
-	err = tools.GetEqShapeErr(r.GetShape(), []uint{2, 3, 4, 2})
+	err = tools.GetEqShapeErr("Testing dot product result shape", r.GetShape(), []uint{2, 3, 4, 2})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +150,7 @@ func TestDotProductMatMat2(t *testing.T) {
 
 	g.Exec()
 
-	err = tools.GetEqShapeErr(r.GetShape(), []uint{3, 2})
+	err = tools.GetEqShapeErr("Testing dot product result shape", r.GetShape(), []uint{3, 2})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,10 +1,13 @@
 package operation
 
-import "github.com/julioguillermo/godeep/types"
+import (
+	"github.com/julioguillermo/godeep/number"
+	"github.com/julioguillermo/godeep/types"
+)
 
 type Neg[T types.Number] struct {
-	*Operand[T]
-	O *Operand[T]
+	*number.Scalar[T]
+	O *number.Scalar[T]
 }
 
 func (p *Neg[_]) Cal() {

@@ -1,14 +1,22 @@
 package layer
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/julioguillermo/godeep/activation"
 	"github.com/julioguillermo/godeep/context"
-	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/errors"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/tensor"
+	"github.com/julioguillermo/godeep/tools"
 	"github.com/julioguillermo/godeep/types"
 )
 
 type Base[T types.Number] struct {
+	Type  string
+	Index uint
+
 	Weights tensor.Tensor[T]
 	Bias    tensor.Tensor[T]
 
@@ -16,8 +24,8 @@ type Base[T types.Number] struct {
 	MWeights tensor.Tensor[T]
 	NBias    tensor.Tensor[T]
 	MBias    tensor.Tensor[T]
-	Alpha    *operation.Operand[T]
-	Momentum *operation.Operand[T]
+	Alpha    *number.Scalar[T]
+	Momentum *number.Scalar[T]
 
 	PreLayer Layer[T]
 
@@ -26,6 +34,7 @@ type Base[T types.Number] struct {
 	Neta   tensor.Tensor[T]
 	Output tensor.Tensor[T]
 	Dif    tensor.Tensor[T]
+	Ref    *number.Scalar[T]
 
 	Activation activation.Activation[T]
 
@@ -34,6 +43,7 @@ type Base[T types.Number] struct {
 	build     bool
 	ffBuilded bool
 	bpBuilded bool
+	printed   bool
 }
 
 //func (p *Base[T]) Build() error {
@@ -51,6 +61,10 @@ type Base[T types.Number] struct {
 //	return errors.FmtNeuralError("Base layer do not implement BuildBackpropagation() method")
 //}
 
+func (p *Base[T]) Error(msg string) error {
+	return errors.FmtNeuralError("Layer[%d] type %s: %s", p.Index, p.Type, msg)
+}
+
 func (p *Base[T]) CheckB() bool {
 	if p.build {
 		return true
@@ -60,17 +74,25 @@ func (p *Base[T]) CheckB() bool {
 }
 
 func (p *Base[T]) PreBuild() error {
+	if p.Ref == nil {
+		p.Ref = &number.Scalar[T]{}
+	}
 	if p.PreLayer != nil {
-		err := p.PreLayer.Build()
+		p.PreLayer.GetRef().Value++
+		count, err := p.PreLayer.Build()
 		if err != nil {
 			return err
 		}
+		p.Index = count + 1
+	}
+	if p.Ref.Value == 0 {
+		return p.Error("Unconnected layer")
 	}
 	return nil
 }
 
 func (p *Base[T]) CheckFF() bool {
-	if p.ffBuilded {
+	if p.ffBuilded || p.Ref.Value == 0 {
 		return true
 	}
 	p.ffBuilded = true
@@ -89,7 +111,7 @@ func (p *Base[T]) PreBuildFeedforward(ctx *context.Context) error {
 }
 
 func (p *Base[T]) CheckBP() bool {
-	if p.bpBuilded {
+	if p.bpBuilded || p.Ref.Value == 0 {
 		return true
 	}
 	p.bpBuilded = true
@@ -98,7 +120,7 @@ func (p *Base[T]) CheckBP() bool {
 
 func (p *Base[T]) PostBuildBackpropagation(
 	ctx *context.Context,
-	alpha, momentum *operation.Operand[T],
+	alpha, momentum *number.Scalar[T],
 ) error {
 	if p.PreLayer != nil {
 		err := p.PreLayer.BuildBackpropagation(ctx, alpha, momentum)
@@ -107,6 +129,10 @@ func (p *Base[T]) PostBuildBackpropagation(
 		}
 	}
 	return nil
+}
+
+func (p *Base[T]) GetIndex() uint {
+	return p.Index
 }
 
 func (p *Base[T]) GetInputs() tensor.Tensor[T] {
@@ -123,6 +149,13 @@ func (p *Base[T]) GetNetas() tensor.Tensor[T] {
 
 func (p *Base[T]) GetDif() tensor.Tensor[T] {
 	return p.Dif
+}
+
+func (p *Base[T]) GetRef() *number.Scalar[T] {
+	if p.Ref == nil {
+		p.Ref = &number.Scalar[T]{}
+	}
+	return p.Ref
 }
 
 func (p *Base[T]) GetActivation() activation.Activation[T] {
@@ -154,4 +187,59 @@ func (p *Base[T]) Fit() error {
 
 func (p *Base[T]) SetTrainable(t bool) {
 	p.Trainable = t
+}
+
+func (p *Base[T]) ResetFit(ctx *context.Context) error {
+	if p.PreLayer != nil {
+		err := p.PreLayer.ResetFit(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return tensor.Fill(ctx, p.Dif, &number.Scalar[T]{})
+}
+
+func (p *Base[T]) Reset(ctx *context.Context) error {
+	if p.PreLayer != nil {
+		err := p.PreLayer.Reset(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *Base[T]) ResetPrinted() {
+	p.printed = false
+
+	if p.PreLayer != nil {
+		p.PreLayer.ResetPrinted()
+	}
+}
+
+func (p *Base[T]) PushToString(sb *strings.Builder) {
+	if p.printed {
+		return
+	}
+	if p.PreLayer != nil {
+		p.PreLayer.PushToString(sb)
+		sb.WriteString(
+			fmt.Sprintf(
+				"<Layer[%d] (%d) => %s: O%s>\n",
+				p.Index,
+				p.PreLayer.GetIndex(),
+				p.Type,
+				tools.ShapeStr(p.Output.GetShape()),
+			),
+		)
+		return
+	}
+	sb.WriteString(
+		fmt.Sprintf(
+			"<Layer[%d] => %s: O%s>\n",
+			p.Index,
+			p.Type,
+			tools.ShapeStr(p.Output.GetShape()),
+		),
+	)
 }

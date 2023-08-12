@@ -3,7 +3,7 @@ package layer
 import (
 	"github.com/julioguillermo/godeep/activation"
 	"github.com/julioguillermo/godeep/context"
-	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/tensor"
 	"github.com/julioguillermo/godeep/types"
 )
@@ -23,17 +23,23 @@ func NewInput[T types.Number](shape ...uint) Layer[T] {
 	return in
 }
 
-func (p *Input[T]) Build() error {
+func (p *Input[T]) Build() (uint, error) {
 	if p.CheckB() {
-		return nil
+		return p.Index, nil
 	}
 
 	err := p.PreBuild()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	if p.PreLayer != nil {
+		p.PreLayer.GetRef().Value += p.Ref.Value
+		p.Ref = p.PreLayer.GetRef()
+		p.Activation = p.PreLayer.GetActivation()
+	}
+
+	return p.Index, nil
 }
 
 func (p *Input[T]) BuildFeedforward(ctx *context.Context) error {
@@ -46,9 +52,11 @@ func (p *Input[T]) BuildFeedforward(ctx *context.Context) error {
 	}
 
 	if p.PreLayer != nil {
-		p.Output = p.Input
+		p.Input = p.PreLayer.GetInputs()
+		p.Output = p.PreLayer.GetOutputs()
 		p.Neta = p.PreLayer.GetNetas()
 		p.Dif = p.PreLayer.GetDif()
+		p.Ref = p.PreLayer.GetRef()
 		p.Activation = p.PreLayer.GetActivation()
 		return nil
 	}
@@ -59,8 +67,8 @@ func (p *Input[T]) BuildFeedforward(ctx *context.Context) error {
 
 func (p *Input[T]) BuildBackpropagation(
 	ctx *context.Context,
-	a *operation.Operand[T],
-	m *operation.Operand[T],
+	a *number.Scalar[T],
+	m *number.Scalar[T],
 ) error {
 	if p.CheckBP() {
 		return nil
