@@ -189,50 +189,61 @@ func (p *TensorDotProduct[T]) BuildGraph(ctx *context.Context) error {
 		p.Operands[i] = &number.Scalar[T]{}
 	}
 
-	return p.buildRecursiveDot(ctx, 0, []uint{}, []uint{}, []uint{})
-}
-
-func (p *TensorDotProduct[T]) buildRecursiveDot(
-	ctx *context.Context,
-	dim uint,
-	index []uint,
-	indexA []uint,
-	indexB []uint,
-) error {
-	if dim == uint(len(p.Shape)) {
-		return p.buildLastDim(ctx, index, indexA, indexB)
-	}
-	for i := uint(0); i < p.Shape[dim]; i++ {
-		if dim < p.D {
-			err := p.buildRecursiveDot(
-				ctx,
-				dim+1,
-				append(index, i),
-				append(indexA, i),
-				indexB,
-			)
-			if err != nil {
-				return err
-			}
-		} else {
-			err := p.buildRecursiveDot(
-				ctx,
-				dim+1,
-				append(index, i),
-				indexA,
-				append(indexB, i),
-			)
-			if err != nil {
-				return err
-			}
+	for i := range p.Operands {
+		idx := tools.ReverseIndex(p.MulIndex, p.Shape, uint(i))
+		idxA := idx[:p.D]
+		idxB := idx[p.D:]
+		err := p.buildLastDim(ctx, uint(i), idxA, idxB)
+		if err != nil {
+			return err
 		}
 	}
+
 	return nil
+	// return p.buildRecursiveDot(ctx, 0, []uint{}, []uint{}, []uint{})
 }
+
+//func (p *TensorDotProduct[T]) buildRecursiveDot(
+//	ctx *context.Context,
+//	dim uint,
+//	index []uint,
+//	indexA []uint,
+//	indexB []uint,
+//) error {
+//	if dim == uint(len(p.Shape)) {
+//		return p.buildLastDim(ctx, index, indexA, indexB)
+//	}
+//	for i := uint(0); i < p.Shape[dim]; i++ {
+//		if dim < p.D {
+//			err := p.buildRecursiveDot(
+//				ctx,
+//				dim+1,
+//				append(index, i),
+//				append(indexA, i),
+//				indexB,
+//			)
+//			if err != nil {
+//				return err
+//			}
+//		} else {
+//			err := p.buildRecursiveDot(
+//				ctx,
+//				dim+1,
+//				append(index, i),
+//				indexA,
+//				append(indexB, i),
+//			)
+//			if err != nil {
+//				return err
+//			}
+//		}
+//	}
+//	return nil
+//}
 
 func (p *TensorDotProduct[T]) buildLastDim(
 	ctx *context.Context,
-	index []uint,
+	index uint,
 	indexA []uint,
 	indexB []uint,
 ) error {
@@ -278,10 +289,7 @@ func (p *TensorDotProduct[T]) buildLastDim(
 			B:      b,
 		})
 	}
-	o, err := p.GetOperand(index...)
-	if err != nil {
-		return err
-	}
+	o := p.Operands[index]
 	ctx.Push(&operation.Sum[T]{
 		Scalar: o,
 		Args:   ops,

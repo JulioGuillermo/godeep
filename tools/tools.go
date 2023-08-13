@@ -74,6 +74,16 @@ func ReverseIndex(mul, shape []uint, index uint) []uint {
 	return ind
 }
 
+func GetInvertedIndex(index []uint) []uint {
+	size := len(index) - 1
+	ind := make([]uint, size+1)
+	for i := range ind {
+		ind[i] = index[size-i]
+	}
+
+	return ind
+}
+
 func Equals(shape1, shape2 []uint) int {
 	if len(shape1) != len(shape2) {
 		return -2
