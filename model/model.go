@@ -239,7 +239,7 @@ func (p *Model[T]) Train(
 				start = time.Now()
 				fmt.Printf(
 					"\r[%.2f%%] %d / %d => <%d / %d> %f",
-					float64(i)*100/float64(epochs),
+					float64(i*batch+j)*100/float64(epochs*batch),
 					i,
 					epochs,
 					j, batch,

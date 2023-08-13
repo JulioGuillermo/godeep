@@ -10,10 +10,12 @@ import (
 
 type TensorSubTensor[T types.Number] struct {
 	TensorMat[T]
-	T Tensor[T]
-	D uint
-	S uint
-	E uint
+	T     Tensor[T]
+	D     uint
+	S     uint
+	E     uint
+	M     uint
+	GoOut bool
 }
 
 func SubTensor[T types.Number](t Tensor[T], dim, from, to uint) Tensor[T] {
@@ -22,6 +24,16 @@ func SubTensor[T types.Number](t Tensor[T], dim, from, to uint) Tensor[T] {
 		D: dim,
 		S: from,
 		E: to,
+	}
+}
+
+func SubExtendedTensor[T types.Number](t Tensor[T], dim, from, to uint) Tensor[T] {
+	return &TensorSubTensor[T]{
+		T:     t,
+		D:     dim,
+		S:     from,
+		E:     to,
+		GoOut: true,
 	}
 }
 
@@ -50,7 +62,7 @@ func (p *TensorSubTensor[T]) BuildGraph(ctx *context.Context) error {
 			p.E,
 		)
 	}
-	if p.E > p.T.GetShape()[p.D] {
+	if !p.GoOut && p.E > p.T.GetShape()[p.D] {
 		return errors.FmtNeuralError(
 			"Invalid subtensor range end %d for shape %d at dimension %d",
 			p.E,
@@ -58,7 +70,7 @@ func (p *TensorSubTensor[T]) BuildGraph(ctx *context.Context) error {
 			p.D,
 		)
 	}
-	if p.S > p.T.GetShape()[p.D] {
+	if !p.GoOut && p.S > p.T.GetShape()[p.D] {
 		return errors.FmtNeuralError(
 			"Invalid subtensor range start %d for shape %d at dimension %d",
 			p.S,
@@ -68,6 +80,7 @@ func (p *TensorSubTensor[T]) BuildGraph(ctx *context.Context) error {
 	}
 
 	p.Shape = p.T.GetShape()
+	p.M = p.Shape[p.D]
 	p.Shape[p.D] = p.E - p.S
 	p.MulIndex = tools.GetIndexMul(p.Shape)
 
@@ -78,8 +91,12 @@ func (p *TensorSubTensor[T]) BuildGraph(ctx *context.Context) error {
 }
 
 // TODO better way...
-func (p *TensorSubTensor[_]) subRecursive(dim, index uint, oIndex []uint) error {
+func (p *TensorSubTensor[T]) subRecursive(dim, index uint, oIndex []uint) error {
 	if dim == uint(len(p.Shape)) {
+		if oIndex[p.D] > p.M && p.GoOut {
+			p.Operands[index] = &number.Scalar[T]{}
+			return nil
+		}
 		o, err := p.T.GetOperand(oIndex...)
 		if err != nil {
 			return err
