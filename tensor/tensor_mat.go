@@ -121,11 +121,14 @@ func (p *TensorMat[T]) Set(value T, index ...uint) error {
 func (p *TensorMat[_]) String() string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("<Mat (dims: %d, len: %d, shape: ", len(p.Shape), len(p.Operands)))
-	for _, s := range p.Shape {
-		sb.WriteString(fmt.Sprint(s))
-	}
-	sb.WriteString(") => [")
+	sb.WriteString(
+		fmt.Sprintf(
+			"<Mat (dims: %d, len: %d, shape: %s) => [",
+			len(p.Shape),
+			len(p.Operands),
+			tools.ShapeStr(p.Shape),
+		),
+	)
 	size := len(p.Operands) - 1
 	for i, d := range p.Operands {
 		sb.WriteString(fmt.Sprint(d.Value))

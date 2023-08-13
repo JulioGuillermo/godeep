@@ -156,7 +156,9 @@ func (p *TensorDotProduct[T]) buildMatMat(ctx *context.Context) error {
 		)
 	}
 
-	p.Shape = append(shA[:len(shA)-1], shB[:len(shB)-1]...)
+	p.Shape = append(shA[:len(shA)-1], shB[:len(shB)-2]...)
+	p.Shape = append(p.Shape, shB[len(shB)-1])
+
 	p.MulIndex = tools.GetIndexMul(p.Shape)
 	p.Operands = make([]*number.Scalar[T], tools.GetDataSize(p.Shape))
 	for i := range p.Operands {
@@ -183,6 +185,7 @@ func (p *TensorDotProduct[T]) buildMatMatRecursive(
 			if err != nil {
 				return nil
 			}
+
 			ind := make([]uint, len(indexB)+1)
 			copy(ind, indexB)
 			ind[len(indexB)] = indexB[len(indexB)-1]
@@ -191,6 +194,7 @@ func (p *TensorDotProduct[T]) buildMatMatRecursive(
 			if err != nil {
 				return err
 			}
+
 			o := &number.Scalar[T]{}
 			ops[i] = o
 			ctx.Push(&operation.Mul[T]{
