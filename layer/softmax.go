@@ -3,7 +3,6 @@ package layer
 import (
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/number"
-	"github.com/julioguillermo/godeep/operation"
 	"github.com/julioguillermo/godeep/tensor"
 	"github.com/julioguillermo/godeep/types"
 )
@@ -46,22 +45,23 @@ func (p *SoftMax[T]) BuildFeedforward(ctx *context.Context) error {
 		return err
 	}
 
-	p.Min = &number.Scalar[T]{}
-	ctx.Push(&operation.Min[T]{
-		Scalar: p.Min,
-		Args:   p.Input.GetOperands(),
-	})
+	//p.Min = &number.Scalar[T]{}
+	//ctx.Push(&operation.Min[T]{
+	//	Scalar: p.Min,
+	//	Args:   p.Input.GetOperands(),
+	//})
 
-	t := tensor.AddScalar[T](p.Input, p.Min)
-	t.BuildGraph(ctx)
+	// t := tensor.AddScalar[T](p.Input, p.Min)
+	// t.BuildGraph(ctx)
 
-	p.Sum = &number.Scalar[T]{}
-	ctx.Push(&operation.Sum[T]{
-		Scalar: p.Sum,
-		Args:   t.GetOperands(),
-	})
+	//p.Sum = &number.Scalar[T]{}
+	//ctx.Push(&operation.Sum[T]{
+	//	Scalar: p.Sum,
+	//	Args:   t.GetOperands(),
+	//})
 
-	p.Neta = tensor.DivScalar[T](t, p.Sum)
+	// p.Neta = tensor.DivScalar[T](t, p.Sum)
+	p.Neta = tensor.SoftMax[T](p.Input)
 	p.Output = p.Neta // tensor.NewZeros[T](outShape...)
 
 	err = p.Neta.BuildGraph(ctx)
