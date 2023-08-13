@@ -13,12 +13,18 @@ type TensorDotProduct[T types.Number] struct {
 	TensorMat[T]
 	A Tensor[T]
 	B Tensor[T]
+
+	Da    uint
+	Db    uint
+	D     uint
+	undef bool
 }
 
-func DotProduct[T types.Number](a, b Tensor[T]) Tensor[T] {
+func Dot[T types.Number](a, b Tensor[T]) Tensor[T] {
 	return &TensorDotProduct[T]{
-		A: a,
-		B: b,
+		A:     a,
+		B:     b,
+		undef: true,
 	}
 }
 
@@ -56,6 +62,7 @@ func (p *TensorDotProduct[T]) buildVector(ctx *context.Context) error {
 	return nil
 }
 
+/*
 func (p *TensorDotProduct[T]) buildMatVec(m, v Tensor[T], invert bool, ctx *context.Context) error {
 	shape := m.GetShape()
 	if invert {
@@ -141,100 +148,7 @@ func (p *TensorDotProduct[T]) buildMatVecRecursive(
 		}
 	}
 	return nil
-}
-
-func (p *TensorDotProduct[T]) buildMatMat(ctx *context.Context) error {
-	shA := p.A.GetShape()
-	shB := p.B.GetShape()
-	if shA[len(shA)-1] != shB[len(shB)-2] {
-		return errors.FmtNeuralError(
-			"Invalid dot product on matrix with shape[%d] %d and matrix with shape[%d] %d",
-			len(shA)-1,
-			shA[len(shA)-1],
-			len(shB)-2,
-			shB[len(shB)-2],
-		)
-	}
-
-	p.Shape = append(shA[:len(shA)-1], shB[:len(shB)-2]...)
-	p.Shape = append(p.Shape, shB[len(shB)-1])
-
-	p.MulIndex = tools.GetIndexMul(p.Shape)
-	p.Operands = make([]*number.Scalar[T], tools.GetDataSize(p.Shape))
-	for i := range p.Operands {
-		p.Operands[i] = &number.Scalar[T]{}
-	}
-
-	p.buildMatMatRecursive(ctx, uint(len(shA)-1), 0, []uint{}, []uint{}, []uint{})
-
-	return nil
-}
-
-func (p *TensorDotProduct[T]) buildMatMatRecursive(
-	ctx *context.Context,
-	sha uint,
-	dim uint,
-	index []uint,
-	indexA []uint,
-	indexB []uint,
-) error {
-	if dim == uint(len(p.Shape)) {
-		ops := make([]*number.Scalar[T], p.A.GetShape()[sha])
-		for i := uint(0); i < p.A.GetShape()[sha]; i++ {
-			a, err := p.A.GetOperand(append(indexA, i)...)
-			if err != nil {
-				return nil
-			}
-
-			ind := make([]uint, len(indexB)+1)
-			copy(ind, indexB)
-			ind[len(indexB)] = indexB[len(indexB)-1]
-			ind[len(indexB)-1] = i
-			b, err := p.B.GetOperand(ind...)
-			if err != nil {
-				return err
-			}
-
-			o := &number.Scalar[T]{}
-			ops[i] = o
-			ctx.Push(&operation.Mul[T]{
-				Scalar: o,
-				A:      a,
-				B:      b,
-			})
-		}
-		o, err := p.GetOperand(index...)
-		if err != nil {
-			return err
-		}
-		ctx.Push(&operation.Sum[T]{
-			Scalar: o,
-			Args:   ops,
-		})
-		return nil
-	}
-	for i := uint(0); i < p.Shape[dim]; i++ {
-		if dim < sha {
-			err := p.buildMatMatRecursive(
-				ctx,
-				sha,
-				dim+1,
-				append(index, i),
-				append(indexA, i),
-				indexB,
-			)
-			if err != nil {
-				return err
-			}
-		} else {
-			err := p.buildMatMatRecursive(ctx, sha, dim+1, append(index, i), indexA, append(indexB, i))
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
+}*/
 
 func (p *TensorDotProduct[T]) BuildGraph(ctx *context.Context) error {
 	if p.builded {
@@ -251,25 +165,151 @@ func (p *TensorDotProduct[T]) BuildGraph(ctx *context.Context) error {
 		return err
 	}
 
+	sha := p.A.GetShape()
+	shb := p.B.GetShape()
+
+	if len(sha) == 0 || len(shb) == 0 {
+		return errors.FmtNeuralError("Can not do dot to an empty tensor")
+	}
+
+	if p.undef {
+		p.Da = uint(len(sha) - 1)
+		p.Db = uint(len(shb) - 1)
+		if p.Db > 0 {
+			p.Db--
+		}
+	}
+
+	if sha[p.Da] != shb[p.Db] {
+		return errors.FmtNeuralError(
+			"Invalid dot operation to tensors with shape[%d] %d and shape[%d] %d",
+			p.Da,
+			sha[p.Da],
+			p.Db,
+			shb[p.Db],
+		)
+	}
+
 	if len(p.A.GetShape()) == 1 && len(p.B.GetShape()) == 1 {
 		return p.buildVector(ctx)
 	}
 
-	if len(p.B.GetShape()) == 1 {
-		return p.buildMatVec(p.A, p.B, false, ctx)
-	}
-
-	if len(p.A.GetShape()) == 1 {
-		return p.buildMatVec(p.B, p.A, true, ctx)
-	}
-
-	// if len(p.A.GetShape()) == 2 && len(p.B.GetShape()) == 2 {
-	return p.buildMatMat(ctx)
+	//if len(p.B.GetShape()) == 1 {
+	//	return p.buildMatVec(p.A, p.B, false, ctx)
 	//}
 
-	//return errors.FmtNeuralError(
-	//	"Invalid dot operation on shapes %s and %s",
-	//	tools.ShapeStr(p.A.GetShape()),
-	//	tools.ShapeStr(p.B.GetShape()),
-	//)
+	//if len(p.A.GetShape()) == 1 {
+	//	return p.buildMatVec(p.B, p.A, true, ctx)
+	//}
+
+	p.Shape = append(sha[:p.Da], sha[p.Da+1:]...)
+	p.D = uint(len(p.Shape))
+	p.Shape = append(p.Shape, shb[:p.Db]...)
+	p.Shape = append(p.Shape, shb[p.Db+1:]...)
+
+	p.MulIndex = tools.GetIndexMul(p.Shape)
+
+	p.Operands = make([]*number.Scalar[T], tools.GetDataSize(p.Shape))
+	for i := range p.Operands {
+		p.Operands[i] = &number.Scalar[T]{}
+	}
+
+	return p.buildRecursiveDot(ctx, 0, []uint{}, []uint{}, []uint{})
+}
+
+func (p *TensorDotProduct[T]) buildRecursiveDot(
+	ctx *context.Context,
+	dim uint,
+	index []uint,
+	indexA []uint,
+	indexB []uint,
+) error {
+	if dim == uint(len(p.Shape)) {
+		return p.buildLastDim(ctx, index, indexA, indexB)
+	}
+	for i := uint(0); i < p.Shape[dim]; i++ {
+		if dim < p.D {
+			err := p.buildRecursiveDot(
+				ctx,
+				dim+1,
+				append(index, i),
+				append(indexA, i),
+				indexB,
+			)
+			if err != nil {
+				return err
+			}
+		} else {
+			err := p.buildRecursiveDot(
+				ctx,
+				dim+1,
+				append(index, i),
+				indexA,
+				append(indexB, i),
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (p *TensorDotProduct[T]) buildLastDim(
+	ctx *context.Context,
+	index []uint,
+	indexA []uint,
+	indexB []uint,
+) error {
+	sha := p.A.GetShape()
+	ops := make([]*number.Scalar[T], sha[p.Da])
+
+	indA := make([]uint, len(indexA)+1)
+	indB := make([]uint, len(indexB)+1)
+	for i := uint(0); i < uint(len(indexA)); i++ {
+		if i < p.Da {
+			indA[i] = indexA[i]
+		} else {
+			indA[i+1] = indexA[i]
+		}
+	}
+	for i := uint(0); i < uint(len(indexB)); i++ {
+		if i < p.Db {
+			indB[i] = indexB[i]
+		} else {
+			indB[i+1] = indexB[i]
+		}
+	}
+
+	for i := uint(0); i < sha[p.Da]; i++ {
+		indA[p.Da] = i
+		indB[p.Db] = i
+
+		a, err := p.A.GetOperand(indA...)
+		if err != nil {
+			return nil
+		}
+
+		b, err := p.B.GetOperand(indB...)
+		if err != nil {
+			return err
+		}
+
+		o := &number.Scalar[T]{}
+		ops[i] = o
+		ctx.Push(&operation.Mul[T]{
+			Scalar: o,
+			A:      a,
+			B:      b,
+		})
+	}
+	o, err := p.GetOperand(index...)
+	if err != nil {
+		return err
+	}
+	ctx.Push(&operation.Sum[T]{
+		Scalar: o,
+		Args:   ops,
+	})
+	return nil
 }

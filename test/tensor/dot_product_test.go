@@ -15,7 +15,7 @@ func TestDotProductVecVec(t *testing.T) {
 	v2 := tensor.NewFromValues[float32]([]float32{4, 3, 5, 8}, 4)
 	var R float32 = 119
 
-	r := tensor.DotProduct(v1, v2)
+	r := tensor.Dot(v1, v2)
 	g, err := graph.NewGraph(r)
 	if err != nil {
 		t.Fatal(err)
@@ -39,7 +39,7 @@ func TestDotProductMatVec(t *testing.T) {
 	m := tensor.NewFromValues[float32]([]float32{6, 5, 9, 8, 3, 4, 5, 6, 7, 2, 1, 4}, 2, 3, 2)
 	R := []float32{16, 25, 11, 17, 11, 9}
 
-	r := tensor.DotProduct(m, v)
+	r := tensor.Dot(m, v)
 	g, err := graph.NewGraph(r)
 	if err != nil {
 		t.Fatal(err)
@@ -69,7 +69,7 @@ func TestDotProductVecMat(t *testing.T) {
 	m := tensor.NewFromValues[float32]([]float32{6, 5, 9, 8, 3, 4, 5, 6, 7, 2, 1, 4}, 2, 3, 2)
 	R := []float32{33, 33, 22, 22}
 
-	r := tensor.DotProduct(v, m)
+	r := tensor.Dot(v, m)
 	g, err := graph.NewGraph(r)
 	if err != nil {
 		t.Fatal(err)
@@ -113,7 +113,7 @@ func TestDotProductMatMat(t *testing.T) {
 		42, 37, 23, 28, 11, 18, 22, 18,
 	}
 
-	r := tensor.DotProduct(m1, m2)
+	r := tensor.Dot(m1, m2)
 	g, err := graph.NewGraph(r)
 	if err != nil {
 		t.Fatal(err)
@@ -142,7 +142,7 @@ func TestDotProductMatMat2(t *testing.T) {
 	m2 := tensor.NewFromValues[float32]([]float32{3, 4, 5, 6}, 2, 2)
 	R := []float32{63, 78, 69, 86, 59, 74}
 
-	r := tensor.DotProduct(m1, m2)
+	r := tensor.Dot(m1, m2)
 	g, err := graph.NewGraph(r)
 	if err != nil {
 		t.Fatal(err)
