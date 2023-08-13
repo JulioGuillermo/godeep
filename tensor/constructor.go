@@ -25,7 +25,7 @@ func NewZeros[T types.Number](shape ...uint) Tensor[T] {
 	return mat
 }
 
-func NewOne[T types.Number](shape ...uint) Tensor[T] {
+func NewOnes[T types.Number](shape ...uint) Tensor[T] {
 	data := make([]*number.Scalar[T], tools.GetDataSize(shape))
 	for i := range data {
 		data[i] = &number.Scalar[T]{Value: 1}
