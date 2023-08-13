@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"github.com/julioguillermo/godeep/activation"
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
@@ -16,22 +15,20 @@ type Norm[T types.Number] struct {
 	maxScalar *number.Scalar[T]
 }
 
-func NewNorm[T types.Number](act activation.Activation[T]) Layer[T] {
+func NewNorm[T types.Number]() Layer[T] {
 	l := &Norm[T]{}
 	l.Type = "Norm"
 	l.min = 0
 	l.max = 1
-	l.Activation = act
 
 	return l
 }
 
-func NewENorm[T types.Number](act activation.Activation[T]) Layer[T] {
+func NewENorm[T types.Number]() Layer[T] {
 	l := &Norm[T]{}
 	l.Type = "Norm"
 	l.min = -1
 	l.max = 1
-	l.Activation = act
 
 	return l
 }
@@ -49,6 +46,7 @@ func (p *Norm[T]) Build() (uint, error) {
 	if p.PreLayer == nil {
 		return 0, p.Error("This layer can not be input layer")
 	}
+	p.Activation = p.PreLayer.GetActivation()
 	return p.Index, nil
 }
 
@@ -61,17 +59,22 @@ func (p *Norm[T]) BuildFeedforward(ctx *context.Context) error {
 		return err
 	}
 
-	ops := p.Input.GetOperands()
+	abs := tensor.Abs[T](p.Input)
+	err = abs.BuildGraph(ctx)
+	if err != nil {
+		return err
+	}
+
 	p.maxScalar = &number.Scalar[T]{}
 	ctx.Push(&operation.Max[T]{
 		Scalar: p.maxScalar,
-		Args:   ops,
+		Args:   abs.GetOperands(),
 	})
 
 	norm := tensor.DivScalar(p.Input, p.maxScalar)
 	norm = tensor.MulScalar(norm, &number.Scalar[T]{Value: p.max - p.min})
 	p.Neta = tensor.AddScalar(norm, &number.Scalar[T]{Value: p.min})
-	p.Output = tensor.Activate(p.Neta, p.Activation.Activate)
+	p.Output = p.Neta // tensor.Activate(p.Neta, p.Activation.Activate)
 
 	err = p.Output.BuildGraph(ctx)
 	if err != nil {
@@ -98,8 +101,8 @@ func (p *Norm[T]) BuildBackpropagation(ctx *context.Context, a, m *number.Scalar
 	Dif = tensor.MulScalar(Dif, &number.Scalar[T]{Value: p.max - p.min})
 	Dif = tensor.DivScalar(Dif, p.maxScalar)
 
-	der := tensor.Activate(p.PreLayer.GetNetas(), p.PreLayer.GetActivation().Derive)
-	Dif = tensor.Mul(Dif, der)
+	// der := tensor.Activate(p.PreLayer.GetNetas(), p.PreLayer.GetActivation().Derive)
+	// Dif = tensor.Mul(Dif, der)
 
 	err := tensor.Transfer(ctx, Dif, p.PreLayer.GetDif())
 	if err != nil {
