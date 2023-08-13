@@ -28,38 +28,13 @@ func Dot[T types.Number](a, b Tensor[T]) Tensor[T] {
 	}
 }
 
-func (p *TensorDotProduct[T]) buildVector(ctx *context.Context) error {
-	if p.A.GetSize() != p.B.GetSize() {
-		return errors.FmtNeuralError(
-			"Dot product fail on vectors with size %d and %d",
-			p.A.GetSize(),
-			p.B.GetSize(),
-		)
+func DotAt[T types.Number](a, b Tensor[T], dimA, dimB uint) Tensor[T] {
+	return &TensorDotProduct[T]{
+		A:  a,
+		B:  b,
+		Da: dimA,
+		Db: dimB,
 	}
-	op1 := p.A.GetOperands()
-	op2 := p.B.GetOperands()
-	ops := make([]*number.Scalar[T], len(op1))
-	for i := range ops {
-		o := &number.Scalar[T]{}
-		ops[i] = o
-		ctx.Push(&operation.Mul[T]{
-			Scalar: o,
-			A:      op1[i],
-			B:      op2[i],
-		})
-	}
-
-	o := &number.Scalar[T]{}
-	ctx.Push(&operation.Sum[T]{
-		Scalar: o,
-		Args:   ops,
-	})
-
-	p.Operands = []*number.Scalar[T]{o}
-	p.Shape = []uint{1}
-	p.MulIndex = []uint{1}
-
-	return nil
 }
 
 /*
@@ -311,5 +286,39 @@ func (p *TensorDotProduct[T]) buildLastDim(
 		Scalar: o,
 		Args:   ops,
 	})
+	return nil
+}
+
+func (p *TensorDotProduct[T]) buildVector(ctx *context.Context) error {
+	if p.A.GetSize() != p.B.GetSize() {
+		return errors.FmtNeuralError(
+			"Dot product fail on vectors with size %d and %d",
+			p.A.GetSize(),
+			p.B.GetSize(),
+		)
+	}
+	op1 := p.A.GetOperands()
+	op2 := p.B.GetOperands()
+	ops := make([]*number.Scalar[T], len(op1))
+	for i := range ops {
+		o := &number.Scalar[T]{}
+		ops[i] = o
+		ctx.Push(&operation.Mul[T]{
+			Scalar: o,
+			A:      op1[i],
+			B:      op2[i],
+		})
+	}
+
+	o := &number.Scalar[T]{}
+	ctx.Push(&operation.Sum[T]{
+		Scalar: o,
+		Args:   ops,
+	})
+
+	p.Operands = []*number.Scalar[T]{o}
+	p.Shape = []uint{1}
+	p.MulIndex = []uint{1}
+
 	return nil
 }

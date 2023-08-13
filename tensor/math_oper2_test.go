@@ -1,4 +1,4 @@
-package test
+package tensor_test
 
 import (
 	"testing"

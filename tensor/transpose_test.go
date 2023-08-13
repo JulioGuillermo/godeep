@@ -1,4 +1,4 @@
-package test
+package tensor_test
 
 import (
 	"testing"
@@ -8,7 +8,39 @@ import (
 	"github.com/julioguillermo/godeep/tools"
 )
 
-func TestTranspose(t *testing.T) {
+func TestUniDimTranspose(t *testing.T) {
+	m := tensor.NewFromValues(
+		[]float32{1, 2, 3, 4, 5, 6, 7},
+		7,
+	)
+	R := []float32{1, 2, 3, 4, 5, 6, 7}
+
+	trans := tensor.Transpose[float32](m)
+
+	g, err := graph.NewGraph(trans)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.Exec()
+
+	t.Log(trans)
+
+	err = tools.GetEqShapeErr(
+		"Testing transpose result shape",
+		trans.GetShape(),
+		[]uint{7},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, o := range trans.GetData() {
+		if o != R[i] {
+			t.Fatalf("Fail at %d => %f and %f", i, R[i], o)
+		}
+	}
+}
+
+func TestMultiDimTranspose(t *testing.T) {
 	m := tensor.NewFromValues(
 		[]float32{2, 3, 4, 6, 7, 5, 3, 2, 5, 85, 4, 7, 7, 8, 9, 5, 8, 5, 6, 4, 3, 5, 7, 4},
 		1,
