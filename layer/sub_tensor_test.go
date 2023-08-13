@@ -12,7 +12,7 @@ import (
 
 func TestSubTensor(t *testing.T) {
 	var err error
-	act := &activation.Sin[float32]{}
+	act := &activation.Tanh[float32]{}
 
 	inL := layer.NewInput[float32](2)
 
@@ -56,7 +56,7 @@ func TestSubTensor(t *testing.T) {
 		tensor.NewFromValues[float32]([]float32{0}, 1),
 	}
 
-	err = m.Train(inputs, outputs, 1000, 0, 0.001, 0.4)
+	err = m.Train(inputs, outputs, 5000, 0, 0.001, 0.4)
 	if err != nil {
 		t.Fatal(err)
 	}
