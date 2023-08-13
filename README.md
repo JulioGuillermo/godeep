@@ -1,18 +1,18 @@
 # GODEEP
 
-This is a library to provide a tensor system to make complex operations throw a computational graph.
+This is a library to provide a tensor system to make complex operations through a computational graph.
 
-It also provide a model and differents layers to make neural networks.
+It also provides a model and differents layers to make neural networks.
 
 ## Tensor system
 
-In the tensor system you can store all kind of vectors or multidimensional matrix throw the TensorMat type. And you can make many operations on them.
+In the tensor system you can store all kind of vectors or multidimensional matrix through the TensorMat type. And you can make many operations on them.
 
-You can also specified the tensor data type, it support float32, float64, int16, int32 and int64.
+You can also specify the tensor data type, it support float32, float64, int16, int32 and int64.
 
 ### Vectors
 
-There are different ways to create a vector, here some examples:
+There are different ways to create a vector, here are some examples:
 
 ```go
 // Creating a vector with the given 4 values
@@ -27,7 +27,7 @@ vector := tensor.NewOne[float32](10)
 
 ### Matrix
 
-Create a matrix is just like creating a vector, but with more dimensions:
+Creating a matrix is just like creating a vector, but with more dimensions:
 
 ```go
 // Creating a 2x2 matrix with values
@@ -75,7 +75,7 @@ m2 := tensor.NewFromValues[float32]([]float32{
 	1, 2, 3,
 }, 3, 3)
 
-// Let's make some math operation to the matrices
+// Let's perform some mathematical operations on the matrices
 add := tensor.Add[float32](m1, m2)
 // Note: this mul operation is not a matrix multiplication or dot product
 // is a simple multiplication of each component of the matrices
@@ -84,7 +84,7 @@ mul := tensor.Mul[float32](m1, m2)
 sub := tensor.Sub(mul, add)
 
 // Build the computational graph to execute all the operations.
-// Note: we just past the result tensor of all operations (the last tensor)
+// Note: we just pass the result tensor of all operations (the last tensor)
 g, err := graph.NewGraph(sub)
 if err != nil {
 	log.Fatal(err)
@@ -137,11 +137,11 @@ log.Println(sub)
 
 ## Neural Network
 
-You can also make neural network with this library.
+You can also create neural networks with this library.
 
 ```go
 // Select an activation
-// you can use different activations for different layers
+// you can use different activation functions for different layers
 act := &activation.Tanh[float32]{}
 
 // Make a model and set layers
@@ -164,7 +164,7 @@ outputs := []tensor.Tensor[float32]{
 	tensor.NewFromValues[float32]([]float32{0}, 1),
 }
 
-// Test the model before train
+// Test the model before training
 for i, in := range inputs {
 	o, err := m.Predict(in)
 	if err != nil {
@@ -173,17 +173,17 @@ for i, in := range inputs {
 	fmt.Println(o, outputs[i])
 }
 
-// Train the model
+// Training the model
 fmt.Println("###########")
-start := time.Now() // Lets see how long it take
+start := time.Now() // Let's see how long it take
 err := m.Train(inputs, outputs, 100_000, 0, 0.001, 0.4)
 if err != nil {
 	panic(err)
 }
-fmt.Println(time.Since(start)) // It most take about a second
+fmt.Println(time.Since(start)) // It must take about a second
 fmt.Println("###########")
 
-// Test the model after train
+// Test the model after training
 for i, in := range inputs {
 	o, err := m.Predict(in)
 	if err != nil {
@@ -207,7 +207,7 @@ for i, in := range inputs {
 - SoftMax
 - SubTensor
 
-##### Other layers types to implement in a future
+##### Other layer types to be implemented in the future
 
 This list can change.
 
