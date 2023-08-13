@@ -59,6 +59,7 @@ func (p *Dense[T]) BuildFeedforward(ctx *context.Context) error {
 	if p.Input == nil {
 		return p.Error("Invalid input => nil")
 	}
+
 	inputs := p.Input.GetSize()
 	outputs := p.Output.GetSize()
 
@@ -134,6 +135,10 @@ func (p *Dense[T]) BuildBackpropagation(
 	Dif := p.Dif
 	if p.Ref.Value > 1 {
 		Dif = tensor.DivScalar(Dif, p.Ref)
+	}
+	err := Dif.BuildGraph(ctx)
+	if err != nil {
+		return err
 	}
 
 	if p.PreLayer != nil {

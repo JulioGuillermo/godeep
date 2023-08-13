@@ -122,6 +122,11 @@ func (p *MaxPool2D[T]) BuildBackpropagation(ctx *context.Context, a, m *number.S
 		Dif = tensor.DivScalar(Dif, p.Ref)
 	}
 
+	err := Dif.BuildGraph(ctx)
+	if err != nil {
+		return err
+	}
+
 	inShape := p.Input.GetShape()
 	outShape := p.Output.GetShape()
 
