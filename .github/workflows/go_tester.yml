@@ -1,0 +1,44 @@
+name: Go Test and Merge to Master
+on:
+  push:
+    branches:
+      - dev # Reemplaza 'dev' con el nombre de tu rama de desarrollo
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.20" # Reemplaza con la versión de Go que estés utilizando
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Get dependencies
+        run: go get -v -t -d ./...
+
+      - name: Test
+        run:
+          go test ./...
+
+          #  merge:
+          #    needs: test
+          #    runs-on: ubuntu-latest
+          #    steps:
+          #      - name: Checkout
+          #        uses: actions/checkout@v2
+          #        with:
+          #          ref: master # Reemplaza 'master' con el nombre de tu rama principal si es diferente
+          #
+          #      - name: Merge
+          #        run: |
+          #          git config user.name 'GitHub Actions'
+          #          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          #          git merge --no-ff origin/dev # Reemplaza 'dev' con el nombre de tu rama de desarrollo
+          #
+          #      - name: Push
+          #        uses: ad-m/github-push-action@master
+          #        with:
+          #          github_token:
