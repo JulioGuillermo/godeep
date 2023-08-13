@@ -85,48 +85,61 @@ func (p *TensorSubTensor[T]) BuildGraph(ctx *context.Context) error {
 	p.MulIndex = tools.GetIndexMul(p.Shape)
 
 	p.Operands = make([]*number.Scalar[T], tools.GetDataSize(p.Shape))
-	p.subRecursive(0, 0, []uint{})
-
-	return nil
-}
-
-// TODO better way...
-func (p *TensorSubTensor[T]) subRecursive(dim, index uint, oIndex []uint) error {
-	if dim == uint(len(p.Shape)) {
-		if oIndex[p.D] > p.M && p.GoOut {
-			p.Operands[index] = &number.Scalar[T]{}
-			return nil
-		}
-		o, err := p.T.GetOperand(oIndex...)
-		if err != nil {
-			return err
-		}
-		p.Operands[index] = o
-		return nil
-	}
-	if dim == p.D {
-		to := p.E - p.S
-		for i := uint(0); i < to; i++ {
-			err := p.subRecursive(
-				dim+1,
-				index+i*p.MulIndex[dim],
-				append(oIndex, i+p.S),
-			)
+	for i := range p.Operands {
+		idx := tools.ReverseIndex(p.MulIndex, p.Shape, uint(i))
+		idx[p.D] += p.S
+		if idx[p.D] > p.M && p.GoOut {
+			p.Operands[i] = &number.Scalar[T]{}
+		} else {
+			o, err := p.T.GetOperand(idx...)
 			if err != nil {
 				return err
 			}
-		}
-		return nil
-	}
-	for i := uint(0); i < p.Shape[dim]; i++ {
-		err := p.subRecursive(
-			dim+1,
-			index+i*p.MulIndex[dim],
-			append(oIndex, i),
-		)
-		if err != nil {
-			return err
+			p.Operands[i] = o
 		}
 	}
+
 	return nil
+	// return p.subRecursive(0, 0, []uint{})
 }
+
+// TODO better way...
+//func (p *TensorSubTensor[T]) subRecursive(dim, index uint, oIndex []uint) error {
+//	if dim == uint(len(p.Shape)) {
+//		if oIndex[p.D] > p.M && p.GoOut {
+//			p.Operands[index] = &number.Scalar[T]{}
+//			return nil
+//		}
+//		o, err := p.T.GetOperand(oIndex...)
+//		if err != nil {
+//			return err
+//		}
+//		p.Operands[index] = o
+//		return nil
+//	}
+//	if dim == p.D {
+//		to := p.E - p.S
+//		for i := uint(0); i < to; i++ {
+//			err := p.subRecursive(
+//				dim+1,
+//				index+i*p.MulIndex[dim],
+//				append(oIndex, i+p.S),
+//			)
+//			if err != nil {
+//				return err
+//			}
+//		}
+//		return nil
+//	}
+//	for i := uint(0); i < p.Shape[dim]; i++ {
+//		err := p.subRecursive(
+//			dim+1,
+//			index+i*p.MulIndex[dim],
+//			append(oIndex, i),
+//		)
+//		if err != nil {
+//			return err
+//		}
+//	}
+//	return nil
+//}

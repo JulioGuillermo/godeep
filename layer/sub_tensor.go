@@ -74,6 +74,11 @@ func (p *SubTensor[T]) BuildBackpropagation(
 		return nil
 	}
 
+	err := p.Dif.BuildGraph(ctx)
+	if err != nil {
+		return err
+	}
+
 	Dif := p.Dif
 	if p.Ref.Value > 1 {
 		Dif = tensor.DivScalar(Dif, p.Ref)
@@ -83,7 +88,7 @@ func (p *SubTensor[T]) BuildBackpropagation(
 
 	Dif = tensor.Add[T](Dif, p_dif)
 
-	err := tensor.Transfer[T](ctx, Dif, p_dif)
+	err = tensor.Transfer[T](ctx, Dif, p_dif)
 	if err != nil {
 		return err
 	}

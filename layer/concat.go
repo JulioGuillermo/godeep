@@ -2,6 +2,7 @@ package layer
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/julioguillermo/godeep/activation"
@@ -153,4 +154,72 @@ func (p *Concat[T]) PushToString(sb *strings.Builder) {
 			tools.ShapeStr(p.Output.GetShape()),
 		),
 	)
+}
+
+func (p *Concat[T]) Load(r io.Reader) error {
+	if p.loaded {
+		return nil
+	}
+	p.loaded = true
+
+	if p.l1 != nil {
+		err := p.l1.Load(r)
+		if err != nil {
+			return err
+		}
+	}
+	if p.l2 != nil {
+		err := p.l2.Load(r)
+		if err != nil {
+			return err
+		}
+	}
+
+	if p.Weights != nil {
+		err := p.Weights.Load(r)
+		if err != nil {
+			return err
+		}
+	}
+	if p.Bias != nil {
+		err := p.Bias.Load(r)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *Concat[T]) Save(w io.Writer) error {
+	if p.saved {
+		return nil
+	}
+	p.saved = true
+
+	if p.l1 != nil {
+		err := p.l1.Save(w)
+		if err != nil {
+			return err
+		}
+	}
+	if p.l2 != nil {
+		err := p.l2.Save(w)
+		if err != nil {
+			return err
+		}
+	}
+
+	if p.Weights != nil {
+		err := p.Weights.Save(w)
+		if err != nil {
+			return err
+		}
+	}
+	if p.Bias != nil {
+		err := p.Bias.Save(w)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

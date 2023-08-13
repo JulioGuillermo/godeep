@@ -2,6 +2,7 @@ package layer
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/julioguillermo/godeep/activation"
@@ -44,6 +45,9 @@ type Base[T types.Number] struct {
 	ffBuilded bool
 	bpBuilded bool
 	printed   bool
+
+	saved  bool
+	loaded bool
 }
 
 //func (p *Base[T]) Build() error {
@@ -251,4 +255,74 @@ func (p *Base[T]) String() string {
 		p.Type,
 		tools.ShapeStr(p.Output.GetShape()),
 	)
+}
+
+func (p *Base[T]) ResetLoad() {
+	p.loaded = false
+	if p.PreLayer != nil {
+		p.PreLayer.ResetLoad()
+	}
+}
+
+func (p *Base[T]) ResetSave() {
+	p.saved = false
+	if p.PreLayer != nil {
+		p.PreLayer.ResetSave()
+	}
+}
+
+func (p *Base[T]) Load(r io.Reader) error {
+	if p.loaded {
+		return nil
+	}
+	p.loaded = true
+
+	if p.PreLayer != nil {
+		err := p.PreLayer.Load(r)
+		if err != nil {
+			return err
+		}
+	}
+
+	if p.Weights != nil {
+		err := p.Weights.Load(r)
+		if err != nil {
+			return err
+		}
+	}
+	if p.Bias != nil {
+		err := p.Bias.Load(r)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *Base[T]) Save(w io.Writer) error {
+	if p.saved {
+		return nil
+	}
+	p.saved = true
+
+	if p.PreLayer != nil {
+		err := p.PreLayer.Save(w)
+		if err != nil {
+			return err
+		}
+	}
+
+	if p.Weights != nil {
+		err := p.Weights.Save(w)
+		if err != nil {
+			return err
+		}
+	}
+	if p.Bias != nil {
+		err := p.Bias.Save(w)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

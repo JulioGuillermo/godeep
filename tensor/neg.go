@@ -13,7 +13,7 @@ type TensorNeg[T types.Number] struct {
 }
 
 func Neg[T types.Number](t Tensor[T]) Tensor[T] {
-	return &TensorActivate[T]{
+	return &TensorNeg[T]{
 		T: t,
 	}
 }

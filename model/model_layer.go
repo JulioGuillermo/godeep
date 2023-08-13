@@ -1,6 +1,7 @@
 package model
 
 import (
+	"io"
 	"strings"
 
 	"github.com/julioguillermo/godeep/activation"
@@ -87,4 +88,12 @@ func (p *Model[T]) ResetPrinted() {
 
 func (p *Model[T]) GetIndex() uint {
 	return p.LastLayer.GetIndex()
+}
+
+func (p *Model[T]) Load(r io.Reader) error {
+	return p.LastLayer.Load(r)
+}
+
+func (p *Model[T]) Save(w io.Writer) error {
+	return p.LastLayer.Save(w)
 }

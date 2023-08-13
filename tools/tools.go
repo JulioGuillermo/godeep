@@ -2,9 +2,11 @@ package tools
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/julioguillermo/godeep/errors"
+	"github.com/julioguillermo/godeep/types"
 )
 
 func GetIndexMul(shape []uint) []uint {
@@ -42,6 +44,7 @@ func GetIndex(mul, shape, index []uint) (uint, error) {
 		)
 	}
 	if len(shape) != len(index) {
+		panic("kk")
 		return 0, errors.FmtNeuralError(
 			"Invalid index dimensions %d for internal dimensions %d",
 			len(index),
@@ -69,6 +72,16 @@ func ReverseIndex(mul, shape []uint, index uint) []uint {
 	for i := range ind {
 		ind[i] = index / mul[i]
 		index %= mul[i]
+	}
+
+	return ind
+}
+
+func GetInvertedIndex(index []uint) []uint {
+	size := len(index) - 1
+	ind := make([]uint, size+1)
+	for i := range ind {
+		ind[i] = index[size-i]
 	}
 
 	return ind
@@ -113,4 +126,20 @@ func ShapeStr(s []uint) string {
 	}
 	sb.WriteString("]")
 	return sb.String()
+}
+
+func Distant[T types.Number](t1, t2 []T) (T, error) {
+	if len(t1) != len(t2) {
+		return 0, errors.FmtNeuralError(
+			"Can not calculate distant between tensors with sizes %d and %d",
+			len(t1),
+			len(t2),
+		)
+	}
+	var d T
+	for i := range t1 {
+		dif := t1[i] - t2[i]
+		d += dif * dif
+	}
+	return T(math.Sqrt(float64(d))), nil
 }

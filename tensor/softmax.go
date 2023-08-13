@@ -39,10 +39,11 @@ func (p *TensorSoftMax[T]) BuildGraph(ctx *context.Context) error {
 	})
 
 	p.Operands = make([]*number.Scalar[T], p.T.GetSize())
+
 	ops := p.T.GetOperands()
 	for i := range p.Operands {
 		p.Operands[i] = &number.Scalar[T]{}
-		ctx.Push(&operation.Add[T]{
+		ctx.Push(&operation.Sub[T]{
 			Scalar: p.Operands[i],
 			A:      ops[i],
 			B:      min,

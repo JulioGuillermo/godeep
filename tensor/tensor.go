@@ -1,6 +1,8 @@
 package tensor
 
 import (
+	"io"
+
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/types"
@@ -26,4 +28,9 @@ type Tensor[T types.Number] interface {
 	BuildGraph(*context.Context) error
 
 	SetBuild(bool) Tensor[T]
+
+	Save(io.Writer) error
+	SaveFull(io.Writer) error
+	Load(io.Reader) error
+	LoadFull(io.Reader) error
 }

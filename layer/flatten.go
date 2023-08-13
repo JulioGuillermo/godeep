@@ -31,6 +31,7 @@ func (p *Flatten[T]) Build() (uint, error) {
 	if p.PreLayer == nil {
 		return 0, p.Error("This layer can not be input layer")
 	}
+
 	return p.Index, nil
 }
 
@@ -46,6 +47,9 @@ func (p *Flatten[T]) BuildFeedforward(ctx *context.Context) error {
 	p.Neta = tensor.Flatten[T](p.PreLayer.GetNetas())
 	p.Activation = p.PreLayer.GetActivation()
 
+	p.PreLayer.GetRef().Value += p.Ref.Value
+	p.Ref = p.PreLayer.GetRef()
+
 	err = p.Output.BuildGraph(ctx)
 	if err != nil {
 		return err
@@ -54,6 +58,9 @@ func (p *Flatten[T]) BuildFeedforward(ctx *context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	p.Dif = tensor.NewZeros[T](p.Output.GetShape()...)
+
 	return nil
 }
 
@@ -61,16 +68,11 @@ func (p *Flatten[T]) BuildBackpropagation(ctx *context.Context, a, m *number.Sca
 	if p.CheckBP() {
 		return nil
 	}
-
-	p.Dif = tensor.NewZeros[T](p.Output.GetShape()...)
-	dif := p.Dif
-	if p.Ref.Value > 1 {
-		dif = tensor.DivScalar[T](p.Dif, p.Ref)
+	err := p.Dif.BuildGraph(ctx)
+	if err != nil {
+		return err
 	}
-	preDif := tensor.Flatten(p.PreLayer.GetDif())
-	dif = tensor.Add(preDif, dif)
-
-	err := tensor.Transfer(ctx, dif, p.PreLayer.GetDif())
+	err = tensor.Transfer(ctx, p.Dif, p.PreLayer.GetDif())
 	if err != nil {
 		return err
 	}

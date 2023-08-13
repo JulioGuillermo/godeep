@@ -1,7 +1,9 @@
 package tensor
 
 import (
+	"encoding/binary"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/julioguillermo/godeep/context"
@@ -157,4 +159,73 @@ func (p *TensorMat[T]) Copy() Tensor[T] {
 func (p *TensorMat[T]) SetBuild(b bool) Tensor[T] {
 	p.builded = b
 	return p
+}
+
+func (p *TensorMat[T]) SaveFull(w io.Writer) error {
+	err := binary.Write(w, binary.LittleEndian, len(p.Shape))
+	if err != nil {
+		return err
+	}
+	for _, s := range p.Shape {
+		err := binary.Write(w, binary.LittleEndian, s)
+		if err != nil {
+			return err
+		}
+	}
+	for _, s := range p.Operands {
+		err := binary.Write(w, binary.LittleEndian, s.Value)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *TensorMat[T]) LoadFull(r io.Reader) error {
+	var dims int
+	err := binary.Read(r, binary.LittleEndian, &dims)
+	if err != nil {
+		return err
+	}
+
+	p.Shape = make([]uint, dims)
+	for i := range p.Shape {
+		err := binary.Read(r, binary.LittleEndian, &p.Shape[i])
+		if err != nil {
+			return err
+		}
+	}
+
+	p.MulIndex = tools.GetIndexMul(p.Shape)
+	p.Operands = make([]*number.Scalar[T], tools.GetDataSize(p.Shape))
+
+	for i := range p.Operands {
+		err := binary.Read(r, binary.LittleEndian, &p.Operands[i].Value)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p *TensorMat[T]) Save(w io.Writer) error {
+	for _, s := range p.Operands {
+		err := binary.Write(w, binary.LittleEndian, s.Value)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *TensorMat[T]) Load(r io.Reader) error {
+	for i := range p.Operands {
+		err := binary.Read(r, binary.LittleEndian, &p.Operands[i].Value)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
