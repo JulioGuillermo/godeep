@@ -16,7 +16,7 @@ func TestConv(t *testing.T) {
 	m := model.NewModel[float32]().
 		Push(layer.NewInput[float32](1, 10, 10)).
 		Push(layer.NewConv2D[float32](10, 3, 2, act)).
-		Push(layer.NewConv2D[float32](10, 3, 2, act)).
+		Push(layer.NewConv2D[float32](20, 3, 2, act)).
 		Push(layer.NewDense[float32](1, act))
 
 	err = m.Compile()
