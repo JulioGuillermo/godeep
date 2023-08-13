@@ -1,6 +1,7 @@
 package layer
 
 import (
+	"io"
 	"strings"
 
 	"github.com/julioguillermo/godeep/activation"
@@ -34,4 +35,10 @@ type Layer[T types.Number] interface {
 	String() string
 
 	SetTrainable(bool)
+
+	ResetLoad()
+	ResetSave()
+
+	Load(io.Reader) error
+	Save(io.Writer) error
 }
