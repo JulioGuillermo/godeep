@@ -11,6 +11,8 @@ import (
 	"github.com/julioguillermo/godeep/types"
 )
 
+const MaxColor = 65535
+
 func LoadImage[T types.Number](path string) (tensor.Tensor[T], error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -31,10 +33,10 @@ func LoadImage[T types.Number](path string) (tensor.Tensor[T], error) {
 		for j := 0; j < height; j++ {
 			c := img.At(i, j)
 			r, g, b, a := c.RGBA()
-			t.Set(T(r), 0, uint(i), uint(j))
-			t.Set(T(g), 1, uint(i), uint(j))
-			t.Set(T(b), 2, uint(i), uint(j))
-			t.Set(T(a), 3, uint(i), uint(j))
+			t.Set(T(float64(r)/MaxColor), 0, uint(i), uint(j))
+			t.Set(T(float64(g)/MaxColor), 1, uint(i), uint(j))
+			t.Set(T(float64(b)/MaxColor), 2, uint(i), uint(j))
+			t.Set(T(float64(a)/MaxColor), 3, uint(i), uint(j))
 		}
 	}
 
@@ -68,10 +70,10 @@ func LoadSimpleScaled[T types.Number](path string, width, height uint) (tensor.T
 			Y = int(float64(j) * scalY)
 			c := img.At(X, Y)
 			r, g, b, a := c.RGBA()
-			t.Set(T(r)/T(255), 0, i, j)
-			t.Set(T(g)/T(255), 1, i, j)
-			t.Set(T(b)/T(255), 2, i, j)
-			t.Set(T(a)/T(255), 3, i, j)
+			t.Set(T(float64(r)/MaxColor), 0, uint(i), uint(j))
+			t.Set(T(float64(g)/MaxColor), 1, uint(i), uint(j))
+			t.Set(T(float64(b)/MaxColor), 2, uint(i), uint(j))
+			t.Set(T(float64(a)/MaxColor), 3, uint(i), uint(j))
 		}
 	}
 

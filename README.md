@@ -207,12 +207,12 @@ for i, in := range inputs {
 - ENorm
 - SoftMax
 - SubTensor
+- UpSampling
 
 ##### Other layer types to be implemented in the future
 
 This list can change.
 
-- UpSampling
 - Recurrent
 - LSTM
 - Attention
