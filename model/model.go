@@ -3,8 +3,11 @@ package model
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/errors"
@@ -13,6 +16,7 @@ import (
 	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
 	"github.com/julioguillermo/godeep/tensor"
+	"github.com/julioguillermo/godeep/tools"
 	"github.com/julioguillermo/godeep/types"
 )
 
@@ -228,6 +232,15 @@ func (p *Model[T]) Train(
 	}
 	start := time.Now()
 	delta := time.Millisecond * 300
+
+	width, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+	vervose := err == nil
+
+	sE := fmt.Sprint(epochs)
+	sB := fmt.Sprint(batch)
+	lE := len(sE)
+	lB := len(sB)
+
 	for i := uint(0); i < epochs; i++ {
 		for j := uint(1); j <= batch; j++ {
 			index := rand.Intn(len(inputs))
@@ -235,27 +248,53 @@ func (p *Model[T]) Train(
 			if err != nil {
 				return err
 			}
-			if time.Since(start) > delta {
+			if vervose && time.Since(start) > delta {
 				start = time.Now()
-				fmt.Printf(
-					"\r[%.2f%%] %d / %d => <%d / %d> %f",
-					float64(i*batch+j)*100/float64(epochs*batch),
-					i,
-					epochs,
-					j, batch,
-					float64(p.loss.Value),
+				prog := float64(i*batch+j) / float64(epochs*batch)
+
+				sProg := fmt.Sprintf("%.2f%%", prog*100)
+				sI := fmt.Sprint(i)
+				sJ := fmt.Sprint(j)
+				sLoss := fmt.Sprintf("%.8f", float64(p.loss.Value))
+				lLoss := 10 - len(sLoss)
+				if lLoss < 0 {
+					lLoss = 0
+				}
+
+				info := fmt.Sprintf(
+					"\r[%s%s] %s%s / %s => <%s%s / %s> %s%s",
+					strings.Repeat(" ", 7-len(sProg)),
+					sProg,
+
+					strings.Repeat(" ", lE-len(sI)),
+					sI,
+
+					sE,
+
+					strings.Repeat(" ", lB-len(sJ)),
+					sJ,
+
+					sB,
+
+					strings.Repeat(" ", lLoss),
+					sLoss,
 				)
+
+				fmt.Print(info, " ", tools.Bar(prog, width-len(info)-1))
 			}
 		}
 		//if i%100 == 0 {
 		//}
 	}
-	fmt.Printf(
-		"\r[100%%] %d / %d => %f\n",
+
+	info := fmt.Sprintf(
+		"\r[100.00%%] %d / %d => %f",
 		epochs,
 		epochs,
 		float64(p.loss.Value),
 	)
+	fmt.Println(info, tools.Bar(1, width-len(info)-1))
+
 	return nil
 }
 

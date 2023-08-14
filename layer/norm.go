@@ -46,7 +46,7 @@ func (p *Norm[T]) Build() (uint, error) {
 	if p.PreLayer == nil {
 		return 0, p.Error("This layer can not be input layer")
 	}
-	p.Activation = p.PreLayer.GetActivation()
+	// p.Activation = p.PreLayer.GetActivation()
 	return p.Index, nil
 }
 
@@ -73,8 +73,8 @@ func (p *Norm[T]) BuildFeedforward(ctx *context.Context) error {
 
 	norm := tensor.DivScalar(p.Input, p.maxScalar)
 	norm = tensor.MulScalar(norm, &number.Scalar[T]{Value: p.max - p.min})
-	p.Neta = tensor.AddScalar(norm, &number.Scalar[T]{Value: p.min})
-	p.Output = p.Neta // tensor.Activate(p.Neta, p.Activation.Activate)
+	p.Output = tensor.AddScalar(norm, &number.Scalar[T]{Value: p.min})
+	// p.Output = p.Neta // tensor.Activate(p.Neta, p.Activation.Activate)
 
 	err = p.Output.BuildGraph(ctx)
 	if err != nil {
@@ -110,4 +110,15 @@ func (p *Norm[T]) BuildBackpropagation(ctx *context.Context, a, m *number.Scalar
 	}
 
 	return p.PostBuildBackpropagation(ctx, a, m)
+}
+
+func (p *Norm[T]) BuildDer(ctx *context.Context) (tensor.Tensor[T], error) {
+	if p.Der == nil {
+		der, err := p.PreLayer.BuildDer(ctx)
+		if err != nil {
+			return nil, err
+		}
+		p.Der = der
+	}
+	return p.Der, nil
 }

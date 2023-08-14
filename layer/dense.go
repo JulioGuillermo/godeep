@@ -142,8 +142,14 @@ func (p *Dense[T]) BuildBackpropagation(
 	}
 
 	if p.PreLayer != nil {
-		der := tensor.Activate(p.PreLayer.GetNetas(), p.PreLayer.GetActivation().Derive)
-		err := der.BuildGraph(ctx)
+		// der := tensor.Activate(p.PreLayer.GetNetas(), p.PreLayer.GetActivation().Derive)
+		der, err := p.PreLayer.BuildDer(ctx)
+		if err != nil {
+			return err
+		}
+
+		pdif := p.PreLayer.GetDif()
+		err = pdif.BuildGraph(ctx)
 		if err != nil {
 			return err
 		}
@@ -174,7 +180,7 @@ func (p *Dense[T]) BuildBackpropagation(
 			})
 			d := der.GetOperands()[i]
 			nd := &number.Scalar[T]{}
-			pd := p.PreLayer.GetDif().GetOperands()[i]
+			pd := pdif.GetOperands()[i]
 			ctx.Push(&operation.Mul[T]{
 				Scalar: nd,
 				A:      sum,

@@ -35,6 +35,7 @@ type Base[T types.Number] struct {
 	Neta   tensor.Tensor[T]
 	Output tensor.Tensor[T]
 	Dif    tensor.Tensor[T]
+	Der    tensor.Tensor[T]
 	Ref    *number.Scalar[T]
 
 	Activation activation.Activation[T]
@@ -153,6 +154,17 @@ func (p *Base[T]) GetNetas() tensor.Tensor[T] {
 
 func (p *Base[T]) GetDif() tensor.Tensor[T] {
 	return p.Dif
+}
+
+func (p *Base[T]) BuildDer(ctx *context.Context) (tensor.Tensor[T], error) {
+	if p.Der == nil {
+		p.Der = tensor.Activate[T](p.Neta, p.Activation.Derive)
+		err := p.Der.BuildGraph(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return p.Der, nil
 }
 
 func (p *Base[T]) GetRef() *number.Scalar[T] {

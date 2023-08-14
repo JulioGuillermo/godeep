@@ -32,7 +32,7 @@ func (p *SoftMax[T]) Build() (uint, error) {
 	if p.PreLayer == nil {
 		return 0, p.Error("This layer can not be input layer")
 	}
-	p.Activation = p.PreLayer.GetActivation()
+	// p.Activation = p.PreLayer.GetActivation()
 	return p.Index, nil
 }
 
@@ -61,10 +61,10 @@ func (p *SoftMax[T]) BuildFeedforward(ctx *context.Context) error {
 	//})
 
 	// p.Neta = tensor.DivScalar[T](t, p.Sum)
-	p.Neta = tensor.SoftMax[T](p.Input)
-	p.Output = p.Neta // tensor.NewZeros[T](outShape...)
+	p.Output = tensor.SoftMax[T](p.Input)
+	// p.Output = p.Neta // tensor.NewZeros[T](outShape...)
 
-	err = p.Neta.BuildGraph(ctx)
+	err = p.Output.BuildGraph(ctx)
 	if err != nil {
 		return err
 	}
@@ -89,4 +89,15 @@ func (p *SoftMax[T]) BuildBackpropagation(ctx *context.Context, a, m *number.Sca
 	}
 
 	return p.PostBuildBackpropagation(ctx, a, m)
+}
+
+func (p *SoftMax[T]) BuildDer(ctx *context.Context) (tensor.Tensor[T], error) {
+	if p.Der == nil {
+		der, err := p.PreLayer.BuildDer(ctx)
+		if err != nil {
+			return nil, err
+		}
+		p.Der = der
+	}
+	return p.Der, nil
 }
