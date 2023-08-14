@@ -79,7 +79,7 @@ func TestDeconv2D(t *testing.T) {
 			t.Fatal(err)
 		}
 		if d > Threshold*10 {
-			t.Fatalf("Prediction to far from target:\n    T %s\n    O %s", y.String(), o.String())
+			t.Fatalf("Prediction to far from target: %f", d)
 		}
 	}
 }

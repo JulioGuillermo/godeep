@@ -63,16 +63,16 @@ With the tensor you can make a lot of operations in a very efficient way.
 ```go
 // Make a 3x3 matrix with values
 m1 := tensor.NewFromValues[float32]([]float32{
-	1, 2, 3,
-	9, 8, 7,
-	4, 6, 5,
+ 1, 2, 3,
+ 9, 8, 7,
+ 4, 6, 5,
 }, 3, 3)
 
 // Make a 3x3 matrix with values
 m2 := tensor.NewFromValues[float32]([]float32{
-	9, 8, 7,
-	4, 6, 5,
-	1, 2, 3,
+ 9, 8, 7,
+ 4, 6, 5,
+ 1, 2, 3,
 }, 3, 3)
 
 // Let's perform some mathematical operations on the matrices
@@ -87,7 +87,7 @@ sub := tensor.Sub(mul, add)
 // Note: we just pass the result tensor of all operations (the last tensor)
 g, err := graph.NewGraph(sub)
 if err != nil {
-	log.Fatal(err)
+ log.Fatal(err)
 }
 
 // Execute all the operations...
@@ -146,31 +146,31 @@ act := &activation.Tanh[float32]{}
 
 // Make a model and set layers
 m := model.NewModel[float32]().
-	Push(layer.NewInDense[float32](2, 5, act)).
-	Push(layer.NewDense[float32](5, act)).
-	Push(layer.NewDense[float32](1, act))
+ Push(layer.NewInDense[float32](2, 5, act)).
+ Push(layer.NewDense[float32](5, act)).
+ Push(layer.NewDense[float32](1, act))
 
 // Get inputs and outputs
 inputs := []tensor.Tensor[float32]{
-	tensor.NewFromValues[float32]([]float32{0, 0}, 2),
-	tensor.NewFromValues[float32]([]float32{0, 1}, 2),
-	tensor.NewFromValues[float32]([]float32{1, 0}, 2),
-	tensor.NewFromValues[float32]([]float32{1, 1}, 2),
+ tensor.NewFromValues[float32]([]float32{0, 0}, 2),
+ tensor.NewFromValues[float32]([]float32{0, 1}, 2),
+ tensor.NewFromValues[float32]([]float32{1, 0}, 2),
+ tensor.NewFromValues[float32]([]float32{1, 1}, 2),
 }
 outputs := []tensor.Tensor[float32]{
-	tensor.NewFromValues[float32]([]float32{0}, 1),
-	tensor.NewFromValues[float32]([]float32{1}, 1),
-	tensor.NewFromValues[float32]([]float32{1}, 1),
-	tensor.NewFromValues[float32]([]float32{0}, 1),
+ tensor.NewFromValues[float32]([]float32{0}, 1),
+ tensor.NewFromValues[float32]([]float32{1}, 1),
+ tensor.NewFromValues[float32]([]float32{1}, 1),
+ tensor.NewFromValues[float32]([]float32{0}, 1),
 }
 
 // Test the model before training
 for i, in := range inputs {
-	o, err := m.Predict(in)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(o, outputs[i])
+ o, err := m.Predict(in)
+ if err != nil {
+  panic(err)
+ }
+ fmt.Println(o, outputs[i])
 }
 
 // Training the model
@@ -178,18 +178,18 @@ fmt.Println("###########")
 start := time.Now() // Let's see how long it take
 err := m.Train(inputs, outputs, 100_000, 0, 0.001, 0.4)
 if err != nil {
-	panic(err)
+ panic(err)
 }
 fmt.Println(time.Since(start)) // It must take about a second
 fmt.Println("###########")
 
 // Test the model after training
 for i, in := range inputs {
-	o, err := m.Predict(in)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(o, outputs[i])
+ o, err := m.Predict(in)
+ if err != nil {
+  panic(err)
+ }
+ fmt.Println(o, outputs[i])
 }
 
 ```
@@ -198,6 +198,7 @@ for i, in := range inputs {
 
 - Concat
 - Conv2D
+- Deconv2D
 - Dense
 - Flatten
 - Input
@@ -206,13 +207,12 @@ for i, in := range inputs {
 - ENorm
 - SoftMax
 - SubTensor
+- UpSampling
 
 ##### Other layer types to be implemented in the future
 
 This list can change.
 
-- Deconv2D
-- UpSampling
 - Recurrent
 - LSTM
 - Attention
