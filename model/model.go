@@ -238,7 +238,7 @@ func (p *Model[T]) Train(
 			if time.Since(start) > delta {
 				start = time.Now()
 				fmt.Printf(
-					"\r[%.2f%%] %d / %d => <%d / %d> %f",
+					"[%.2f%%] %d / %d => <%d / %d> %f\n",
 					float64(i*batch+j)*100/float64(epochs*batch),
 					i,
 					epochs,

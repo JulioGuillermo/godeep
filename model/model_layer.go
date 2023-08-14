@@ -4,7 +4,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/julioguillermo/godeep/activation"
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/layer"
 	"github.com/julioguillermo/godeep/number"
@@ -54,21 +53,25 @@ func (p *Model[T]) GetOutputs() tensor.Tensor[T] {
 	return p.LastLayer.GetOutputs()
 }
 
-func (p *Model[T]) GetNetas() tensor.Tensor[T] {
-	return p.LastLayer.GetNetas()
-}
+//func (p *Model[T]) GetNetas() tensor.Tensor[T] {
+//	return p.LastLayer.GetNetas()
+//}
 
 func (p *Model[T]) GetDif() tensor.Tensor[T] {
 	return p.LastLayer.GetDif()
+}
+
+func (p *Model[T]) BuildDer(ctx *context.Context) (tensor.Tensor[T], error) {
+	return p.LastLayer.BuildDer(ctx)
 }
 
 func (p *Model[T]) GetRef() *number.Scalar[T] {
 	return p.LastLayer.GetRef()
 }
 
-func (p *Model[T]) GetActivation() activation.Activation[T] {
-	return p.LastLayer.GetActivation()
-}
+//func (p *Model[T]) GetActivation() activation.Activation[T] {
+//	return p.LastLayer.GetActivation()
+//}
 
 func (p *Model[T]) GetPrelayer() layer.Layer[T] {
 	return p.FirstLayer.GetPrelayer()

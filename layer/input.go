@@ -36,7 +36,7 @@ func (p *Input[T]) Build() (uint, error) {
 	if p.PreLayer != nil {
 		p.PreLayer.GetRef().Value += p.Ref.Value
 		p.Ref = p.PreLayer.GetRef()
-		p.Activation = p.PreLayer.GetActivation()
+		// p.Activation = p.PreLayer.GetActivation()
 	}
 
 	return p.Index, nil
@@ -54,10 +54,10 @@ func (p *Input[T]) BuildFeedforward(ctx *context.Context) error {
 	if p.PreLayer != nil {
 		p.Input = p.PreLayer.GetInputs()
 		p.Output = p.PreLayer.GetOutputs()
-		p.Neta = p.PreLayer.GetNetas()
+		// p.Neta = p.PreLayer.GetNetas()
 		p.Dif = p.PreLayer.GetDif()
 		p.Ref = p.PreLayer.GetRef()
-		p.Activation = p.PreLayer.GetActivation()
+		// p.Activation = p.PreLayer.GetActivation()
 		return nil
 	}
 	p.Neta = p.Input
@@ -74,4 +74,23 @@ func (p *Input[T]) BuildBackpropagation(
 		return nil
 	}
 	return p.PostBuildBackpropagation(ctx, a, m)
+}
+
+func (p *Input[T]) BuildDer(ctx *context.Context) (tensor.Tensor[T], error) {
+	if p.Der == nil {
+		if p.PreLayer != nil {
+			der, err := p.PreLayer.BuildDer(ctx)
+			if err != nil {
+				return nil, err
+			}
+			p.Der = der
+		} else {
+			p.Der = tensor.NewZeros[T](p.Input.GetShape()...)
+			err := p.Der.BuildGraph(ctx)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return p.Der, nil
 }

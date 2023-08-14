@@ -48,7 +48,7 @@ func (p *MaxPool2D[T]) Build() (uint, error) {
 	if p.PreLayer == nil {
 		return 0, p.Error("This layer can not be input layer")
 	}
-	p.Activation = p.PreLayer.GetActivation()
+	// p.Activation = p.PreLayer.GetActivation()
 	return p.Index, nil
 }
 
@@ -71,13 +71,13 @@ func (p *MaxPool2D[T]) BuildFeedforward(ctx *context.Context) error {
 	outShape := p.Input.GetShape()
 	outShape[1] = (outShape[1] + 1) / p.SX
 	outShape[2] = (outShape[2] + 1) / p.SY
-	p.Neta = tensor.NewZeros[T](outShape...)
-	p.Output = p.Neta // tensor.NewZeros[T](outShape...)
+	p.Output = tensor.NewZeros[T](outShape...)
+	// p.Output = p.Neta // tensor.NewZeros[T](outShape...)
 
 	for f := uint(0); f < outShape[0]; f++ {
 		for x := uint(0); x < outShape[1]; x++ {
 			for y := uint(0); y < outShape[2]; y++ {
-				n, err := p.Neta.GetOperand(f, x, y)
+				n, err := p.Output.GetOperand(f, x, y)
 				if err != nil {
 					return err
 				}
@@ -137,7 +137,7 @@ func (p *MaxPool2D[T]) BuildBackpropagation(ctx *context.Context, a, m *number.S
 				if err != nil {
 					return err
 				}
-				n, err := p.Neta.GetOperand(f, x, y)
+				n, err := p.Output.GetOperand(f, x, y)
 				if err != nil {
 					return err
 				}
@@ -172,9 +172,10 @@ func (p *MaxPool2D[T]) BuildBackpropagation(ctx *context.Context, a, m *number.S
 							A:      dif,
 							B:      eq,
 						})
-						ctx.Push(&operation.Set[T]{
+						ctx.Push(&operation.Add[T]{
 							Scalar: pdif,
-							O:      d,
+							A:      pdif,
+							B:      d,
 						})
 					}
 				}
@@ -183,4 +184,75 @@ func (p *MaxPool2D[T]) BuildBackpropagation(ctx *context.Context, a, m *number.S
 	}
 
 	return p.PostBuildBackpropagation(ctx, a, m)
+}
+
+func (p *MaxPool2D[T]) BuildDer(ctx *context.Context) (tensor.Tensor[T], error) {
+	if p.Der == nil {
+		inShape := p.Input.GetShape()
+		outShape := p.Output.GetShape()
+
+		p.Der = tensor.NewZeros[T](outShape...)
+
+		preDer, err := p.PreLayer.BuildDer(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for f := uint(0); f < outShape[0]; f++ {
+			for x := uint(0); x < outShape[1]; x++ {
+				for y := uint(0); y < outShape[2]; y++ {
+					myDer, err := p.Der.GetOperand(f, x, y)
+					if err != nil {
+						return nil, err
+					}
+					out, err := p.Output.GetOperand(f, x, y)
+					if err != nil {
+						return nil, err
+					}
+					ops := make([]*number.Scalar[T], 0, p.SX*p.SY)
+
+					for i := uint(0); i < p.SX; i++ {
+						ix := x*p.SX + i
+						if ix >= inShape[1] {
+							continue
+						}
+						for j := uint(0); j < p.SY; j++ {
+							iy := y*p.SY + j
+							if iy >= inShape[2] {
+								continue
+							}
+							pder, err := preDer.GetOperand(f, ix, iy)
+							if err != nil {
+								return nil, err
+							}
+							in, err := p.Input.GetOperand(f, ix, iy)
+							if err != nil {
+								return nil, err
+							}
+
+							eq := &number.Scalar[T]{}
+							ctx.Push(&operation.Equals[T]{
+								Scalar: eq,
+								A:      in,
+								B:      out,
+							})
+							d := &number.Scalar[T]{}
+							ctx.Push(&operation.Mul[T]{
+								Scalar: d,
+								A:      pder,
+								B:      eq,
+							})
+							ops = append(ops, d)
+						}
+
+						ctx.Push(&operation.Sum[T]{
+							Scalar: myDer,
+							Args:   ops,
+						})
+					}
+				}
+			}
+		}
+	}
+	return p.Der, nil
 }

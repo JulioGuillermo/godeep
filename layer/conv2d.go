@@ -155,8 +155,8 @@ func (p *Conv2D[T]) BuildBackpropagation(
 	}
 
 	if p.PreLayer != nil {
-		der := tensor.Activate(p.PreLayer.GetNetas(), p.PreLayer.GetActivation().Derive)
-		err := der.BuildGraph(ctx)
+		// der := tensor.Activate(p.PreLayer.GetNetas(), p.PreLayer.GetActivation().Derive)
+		der, err := p.PreLayer.BuildDer(ctx)
 		if err != nil {
 			return err
 		}

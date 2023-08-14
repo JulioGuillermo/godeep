@@ -44,8 +44,8 @@ func (p *Flatten[T]) BuildFeedforward(ctx *context.Context) error {
 		return err
 	}
 	p.Output = tensor.Flatten[T](p.PreLayer.GetOutputs())
-	p.Neta = tensor.Flatten[T](p.PreLayer.GetNetas())
-	p.Activation = p.PreLayer.GetActivation()
+	// p.Neta = tensor.Flatten[T](p.PreLayer.GetNetas())
+	// p.Activation = p.PreLayer.GetActivation()
 
 	p.PreLayer.GetRef().Value += p.Ref.Value
 	p.Ref = p.PreLayer.GetRef()
@@ -54,10 +54,10 @@ func (p *Flatten[T]) BuildFeedforward(ctx *context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = p.Neta.BuildGraph(ctx)
-	if err != nil {
-		return err
-	}
+	//err = p.Neta.BuildGraph(ctx)
+	//if err != nil {
+	//	return err
+	//}
 
 	p.Dif = tensor.NewZeros[T](p.Output.GetShape()...)
 
@@ -78,4 +78,19 @@ func (p *Flatten[T]) BuildBackpropagation(ctx *context.Context, a, m *number.Sca
 	}
 
 	return p.PostBuildBackpropagation(ctx, a, m)
+}
+
+func (p *Flatten[T]) BuildDer(ctx *context.Context) (tensor.Tensor[T], error) {
+	if p.Der == nil {
+		der, err := p.PreLayer.BuildDer(ctx)
+		if err != nil {
+			return nil, err
+		}
+		p.Der = tensor.Flatten(der)
+		err = p.Der.BuildGraph(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return p.Der, nil
 }

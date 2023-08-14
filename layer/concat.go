@@ -5,7 +5,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/julioguillermo/godeep/activation"
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/tensor"
@@ -71,8 +70,8 @@ func (p *Concat[T]) BuildFeedforward(ctx *context.Context) error {
 	}
 
 	p.Output = tensor.Concat(p.l1.GetOutputs(), p.l2.GetOutputs(), p.dim)
-	p.Neta = tensor.Concat(p.l1.GetNetas(), p.l2.GetNetas(), p.dim)
-	p.Activation = &activation.Linear[T]{}
+	// p.Neta = tensor.Concat(p.l1.GetNetas(), p.l2.GetNetas(), p.dim)
+	// p.Activation = &activation.Linear[T]{}
 
 	p.Input = p.Output
 
@@ -80,12 +79,12 @@ func (p *Concat[T]) BuildFeedforward(ctx *context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = p.Neta.BuildGraph(ctx)
-	if err != nil {
-		return err
-	}
+	//err = p.Neta.BuildGraph(ctx)
+	//if err != nil {
+	//	return err
+	//}
 
-	p.Dif = tensor.NewZeros[T](p.Output.GetShape()...)
+	p.Dif = tensor.Concat[T](p.l1.GetDif(), p.l2.GetDif(), p.dim)
 
 	return nil
 }
@@ -95,33 +94,34 @@ func (p *Concat[T]) BuildBackpropagation(ctx *context.Context, a, m *number.Scal
 		return nil
 	}
 
-	s1 := p.l1.GetOutputs().GetShape()[p.dim]
-	s2 := p.l2.GetOutputs().GetShape()[p.dim]
+	// s1 := p.l1.GetOutputs().GetShape()[p.dim]
+	// s2 := p.l2.GetOutputs().GetShape()[p.dim]
 
 	Dif := p.Dif
 	if p.Ref.Value > 1 {
 		Dif = tensor.DivScalar(Dif, p.Ref)
+		Dif.BuildGraph(ctx)
 	}
 
-	dif1 := tensor.SubTensor(Dif, p.dim, 0, s1)
-	dif2 := tensor.SubTensor(Dif, p.dim, s1, s1+s2)
+	// dif1 := tensor.SubTensor(Dif, p.dim, 0, s1)
+	// dif2 := tensor.SubTensor(Dif, p.dim, s1, s1+s2)
 
-	dif1 = tensor.Activate(dif1, p.l1.GetActivation().Derive)
-	dif2 = tensor.Activate(dif2, p.l1.GetActivation().Derive)
+	////dif1 = tensor.Activate(dif1, p.l1.GetActivation().Derive)
+	////dif2 = tensor.Activate(dif2, p.l1.GetActivation().Derive)
 
-	dif1 = tensor.Add(dif1, p.l1.GetDif())
-	dif2 = tensor.Add(dif2, p.l2.GetDif())
+	// dif1 = tensor.Add(dif1, p.l1.GetDif())
+	// dif2 = tensor.Add(dif2, p.l2.GetDif())
 
-	err := tensor.Transfer(ctx, dif1, p.l1.GetDif())
-	if err != nil {
-		return err
-	}
-	err = tensor.Transfer(ctx, dif2, p.l2.GetDif())
-	if err != nil {
-		return err
-	}
+	//err := tensor.Transfer(ctx, dif1, p.l1.GetDif())
+	//if err != nil {
+	//	return err
+	//}
+	//err = tensor.Transfer(ctx, dif2, p.l2.GetDif())
+	//if err != nil {
+	//	return err
+	//}
 
-	err = p.l1.BuildBackpropagation(ctx, a, m)
+	err := p.l1.BuildBackpropagation(ctx, a, m)
 	if err != nil {
 		return err
 	}
@@ -222,4 +222,23 @@ func (p *Concat[T]) Save(w io.Writer) error {
 		}
 	}
 	return nil
+}
+
+func (p *Concat[T]) BuildDer(ctx *context.Context) (tensor.Tensor[T], error) {
+	if p.Der == nil {
+		d1, err := p.l1.BuildDer(ctx)
+		if err != nil {
+			return nil, err
+		}
+		d2, err := p.l2.BuildDer(ctx)
+		if err != nil {
+			return nil, err
+		}
+		p.Der = tensor.Concat[T](d1, d2, p.dim)
+		err = p.Der.BuildGraph(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return p.Der, nil
 }
