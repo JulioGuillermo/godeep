@@ -4,6 +4,14 @@ This is a library to provide a tensor system to make complex operations through 
 
 It also provides a model and differents layers to make neural networks.
 
+This project is under development.
+
+To use this library run this command:
+
+```bash
+go get github.com/julioguillermo/godeep
+```
+
 ## Tensor system
 
 In the tensor system you can store all kind of vectors or multidimensional matrix through the TensorMat type. And you can make many operations on them.
