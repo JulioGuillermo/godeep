@@ -10,21 +10,29 @@ import (
 	"github.com/julioguillermo/godeep/tools"
 )
 
-func TestConv2D(t *testing.T) {
+func TestDeconv2D(t *testing.T) {
 	var err error
-	act := &activation.Sin[float32]{}
+	act := &activation.Tanh[float32]{}
 	m := model.NewModel[float32]().
-		Push(layer.NewInput[float32](1, 10, 10)).
-		Push(layer.NewConv2D[float32](10, 3, 2, act)).
-		Push(layer.NewConv2D[float32](20, 3, 2, act)).
-		Push(layer.NewDense[float32](1, act))
+		Push(layer.NewInput[float32](1, 1, 1)).
+		// 1
+		Push(layer.NewDeconv2D[float32](5, 3, 1, act)).
+		// 3
+		Push(layer.NewDeconv2D[float32](5, 3, 1, act)).
+		// 5
+		Push(layer.NewDeconv2D[float32](5, 3, 1, act)).
+		// 7
+		Push(layer.NewDeconv2D[float32](5, 3, 1, act)).
+		// 9
+		Push(layer.NewDeconv2D[float32](1, 2, 1, act))
+	// 10
 
 	err = m.Compile()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	inputs := []tensor.Tensor[float32]{
+	outputs := []tensor.Tensor[float32]{
 		tensor.NewFromValues[float32]([]float32{
 			1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -50,12 +58,12 @@ func TestConv2D(t *testing.T) {
 			1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		}, 1, 10, 10),
 	}
-	outputs := []tensor.Tensor[float32]{
-		tensor.NewFromValues[float32]([]float32{0}, 1),
-		tensor.NewFromValues[float32]([]float32{1}, 1),
+	inputs := []tensor.Tensor[float32]{
+		tensor.NewFromValues[float32]([]float32{0}, 1, 1, 1),
+		tensor.NewFromValues[float32]([]float32{1}, 1, 1, 1),
 	}
 
-	err = m.Train(inputs, outputs, 5000, 0, 0.001, 0.4)
+	err = m.Train(inputs, outputs, 10000, 0, 0.001, 0.4)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +78,7 @@ func TestConv2D(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if d > Threshold {
+		if d > Threshold*10 {
 			t.Fatalf("Prediction to far from target:\n    T %s\n    O %s", y.String(), o.String())
 		}
 	}
