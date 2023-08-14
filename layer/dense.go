@@ -186,15 +186,10 @@ func (p *Dense[T]) BuildBackpropagation(
 				A:      sum,
 				B:      d,
 			})
-			npd := &number.Scalar[T]{}
 			ctx.Push(&operation.Add[T]{
-				Scalar: npd,
+				Scalar: pd,
 				A:      pd,
 				B:      nd,
-			})
-			ctx.Push(&operation.Set[T]{
-				Scalar: pd,
-				O:      npd,
 			})
 		}
 	}

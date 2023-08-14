@@ -18,7 +18,7 @@ func Bar(pro float64, size int) string {
 
 	var sb strings.Builder
 	sb.WriteRune('[')
-	sb.WriteString(strings.Repeat("=", prog))
+	sb.WriteString(strings.Repeat("#", prog))
 	sb.WriteString(strings.Repeat(" ", left))
 	sb.WriteRune(']')
 	return sb.String()

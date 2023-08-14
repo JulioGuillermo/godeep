@@ -12,7 +12,7 @@ import (
 	"github.com/julioguillermo/godeep/types"
 )
 
-type Conv2D[T types.Number] struct {
+type Deconv2D[T types.Number] struct {
 	Base[T]
 	NF uint
 	KW uint
@@ -21,11 +21,11 @@ type Conv2D[T types.Number] struct {
 	SY uint
 }
 
-func NewConv2D[T types.Number](
+func NewDeconv2D[T types.Number](
 	filters, kernelSize, strideSize uint,
 	act activation.Activation[T],
 ) Layer[T] {
-	l := &Conv2D[T]{}
+	l := &Deconv2D[T]{}
 	l.Type = "Conv2D"
 	l.Activation = act
 	l.NF = filters
@@ -38,11 +38,11 @@ func NewConv2D[T types.Number](
 	return l
 }
 
-func NewConv2Dwh[T types.Number](
+func NewDeconv2Dwh[T types.Number](
 	filters, kernelWidth, kernelHeight, strideWidth, strideHeight uint,
 	act activation.Activation[T],
 ) Layer[T] {
-	l := &Conv2D[T]{}
+	l := &Deconv2D[T]{}
 	l.Type = "Conv2D"
 	l.Activation = act
 	l.NF = filters
@@ -55,7 +55,7 @@ func NewConv2Dwh[T types.Number](
 	return l
 }
 
-func (p *Conv2D[T]) Build() (uint, error) {
+func (p *Deconv2D[T]) Build() (uint, error) {
 	if p.CheckB() {
 		return p.Index, nil
 	}
@@ -63,7 +63,7 @@ func (p *Conv2D[T]) Build() (uint, error) {
 	return p.Index, p.PreBuild()
 }
 
-func (p *Conv2D[T]) BuildFeedforward(ctx *context.Context) error {
+func (p *Deconv2D[T]) BuildFeedforward(ctx *context.Context) error {
 	if p.CheckFF() {
 		return nil
 	}
@@ -85,8 +85,8 @@ func (p *Conv2D[T]) BuildFeedforward(ctx *context.Context) error {
 	inShape := p.Input.GetShape()
 	outShape := []uint{
 		p.NF,
-		(inShape[1]-p.KW)/p.SX + 1,
-		(inShape[2]-p.KH)/p.SY + 1,
+		(inShape[1]-1)*p.SX + p.KW,
+		(inShape[2]-1)*p.SY + p.KH,
 	}
 
 	p.Neta = tensor.NewZeros[T](outShape...)
@@ -100,30 +100,53 @@ func (p *Conv2D[T]) BuildFeedforward(ctx *context.Context) error {
 		return err
 	}
 
-	for f := uint(0); f < outShape[0]; f++ {
-		for x := uint(0); x < outShape[1]; x++ {
-			offsetx := x * p.SX
-			row := tensor.SubExtendedTensor(p.Input, 1, offsetx, offsetx+p.KW)
-			for y := uint(0); y < outShape[2]; y++ {
-				offsety := y * p.SY
-				cell := tensor.SubExtendedTensor(row, 2, offsety, offsety+p.KH)
-				weights := tensor.SubTensor(p.Weights, 0, f, f+1)
-				weights = tensor.Reshape(weights, inShape[0], p.KW, p.KH)
-				CxW := tensor.Mul(cell, weights)
-				sum := tensor.Sum(CxW)
-				err := sum.BuildGraph(ctx)
-				if err != nil {
-					return err
+	err = tensor.Transfer(ctx, p.Bias, p.Neta)
+	if err != nil {
+		return err
+	}
+
+	for outF := uint(0); outF < outShape[0]; outF++ {
+		for inF := uint(0); inF < inShape[0]; inF++ {
+			for x := uint(0); x < inShape[1]; x++ {
+				offsetx := x * p.SX
+				for y := uint(0); y < inShape[2]; y++ {
+					offsety := y * p.SY
+
+					for kx := uint(0); kx < p.KW; kx++ {
+						outX := offsetx + kx
+						for ky := uint(0); ky < p.KH; ky++ {
+							outY := offsety + ky
+
+							out, err := p.Neta.GetOperand(outF, outX, outY)
+							if err != nil {
+								return err
+							}
+
+							in, err := p.Input.GetOperand(inF, x, y)
+							if err != nil {
+								return err
+							}
+
+							w, err := p.Weights.GetOperand(outF, inF, kx, ky)
+							if err != nil {
+								return err
+							}
+
+							inW := &number.Scalar[T]{}
+							ctx.Push(&operation.Mul[T]{
+								Scalar: inW,
+								A:      in,
+								B:      w,
+							})
+
+							ctx.Push(&operation.Add[T]{
+								Scalar: out,
+								A:      out,
+								B:      inW,
+							})
+						}
+					}
 				}
-				neta, err := p.Neta.GetOperand(f, x, y)
-				if err != nil {
-					return err
-				}
-				ctx.Push(&operation.Add[T]{
-					Scalar: neta,
-					A:      neta,
-					B:      sum.GetOperands()[0],
-				})
 			}
 		}
 	}
@@ -132,7 +155,7 @@ func (p *Conv2D[T]) BuildFeedforward(ctx *context.Context) error {
 	return p.Output.BuildGraph(ctx)
 }
 
-func (p *Conv2D[T]) BuildBackpropagation(
+func (p *Deconv2D[T]) BuildBackpropagation(
 	ctx *context.Context,
 	Alpha, Momentum *number.Scalar[T],
 ) error {
@@ -155,60 +178,72 @@ func (p *Conv2D[T]) BuildBackpropagation(
 	}
 
 	if p.PreLayer != nil {
-		// der := tensor.Activate(p.PreLayer.GetNetas(), p.PreLayer.GetActivation().Derive)
 		der, err := p.PreLayer.BuildDer(ctx)
 		if err != nil {
 			return err
 		}
 		preDif := p.PreLayer.GetDif()
 
-		for f := uint(0); f < outShape[0]; f++ {
-			for x := uint(0); x < outShape[1]; x++ {
-				for y := uint(0); y < outShape[2]; y++ {
-					d, err := Dif.GetOperand(f, x, y)
+		for inF := uint(0); inF < inShape[0]; inF++ {
+			for x := uint(0); x < inShape[1]; x++ {
+				offsetx := x * p.SX
+				for y := uint(0); y < inShape[2]; y++ {
+					offsety := y * p.SY
+
+					pder, err := der.GetOperand(inF, x, y)
 					if err != nil {
 						return err
 					}
-					for i := uint(0); i < inShape[0]; i++ {
+					pdif, err := preDif.GetOperand(inF, x, y)
+					if err != nil {
+						return err
+					}
+					ops := make([]*number.Scalar[T], 0, outShape[0]*p.KW*p.KH)
+
+					for outF := uint(0); outF < outShape[0]; outF++ {
 						for kx := uint(0); kx < p.KW; kx++ {
-							for ky := uint(0); ky < p.KW; ky++ {
-								ix := x*p.SX + kx
-								iy := y*p.SY + ky
-								if ix >= inShape[1] || iy >= inShape[2] {
-									continue
-								}
-								w, err := p.Weights.GetOperand(f, i, kx, ky)
+							outX := offsetx + kx
+							for ky := uint(0); ky < p.KH; ky++ {
+								outY := offsety + ky
+
+								dif, err := Dif.GetOperand(outF, outX, outY)
 								if err != nil {
 									return err
 								}
-								dw := &number.Scalar[T]{}
+								w, err := p.Weights.GetOperand(outF, inF, kx, ky)
+								if err != nil {
+									return err
+								}
+
+								difW := &number.Scalar[T]{}
 								ctx.Push(&operation.Mul[T]{
-									Scalar: dw,
-									A:      d,
+									Scalar: difW,
+									A:      dif,
 									B:      w,
 								})
-								pder, err := der.GetOperand(i, ix, iy)
-								if err != nil {
-									return err
-								}
-								ctx.Push(&operation.Mul[T]{
-									Scalar: dw,
-									A:      dw,
-									B:      pder,
-								})
 
-								pd, err := preDif.GetOperand(i, ix, iy)
-								if err != nil {
-									return err
-								}
-								ctx.Push(&operation.Add[T]{
-									Scalar: pd,
-									A:      pd,
-									B:      dw,
-								})
+								ops = append(ops, difW)
 							}
 						}
 					}
+
+					ndif := &number.Scalar[T]{}
+					ctx.Push(&operation.Sum[T]{
+						Scalar: ndif,
+						Args:   ops,
+					})
+
+					ctx.Push(&operation.Mul[T]{
+						Scalar: ndif,
+						A:      ndif,
+						B:      pder,
+					})
+
+					ctx.Push(&operation.Add[T]{
+						Scalar: pdif,
+						A:      pdif,
+						B:      ndif,
+					})
 				}
 			}
 		}
@@ -235,49 +270,50 @@ func (p *Conv2D[T]) BuildBackpropagation(
 		return err
 	}
 
-	var in *number.Scalar[T]
-	for f := uint(0); f < outShape[0]; f++ {
-		for i := uint(0); i < inShape[0]; i++ {
-			for kx := uint(0); kx < p.KW; kx++ {
-				for ky := uint(0); ky < p.KH; ky++ {
-					w, err := p.Weights.GetOperand(f, i, kx, ky)
+	for outF := uint(0); outF < outShape[0]; outF++ {
+		for kx := uint(0); kx < p.KW; kx++ {
+			for ky := uint(0); ky < p.KH; ky++ {
+				for inF := uint(0); inF < inShape[0]; inF++ {
+					w, err := p.Weights.GetOperand(outF, inF, kx, ky)
 					if err != nil {
 						return err
 					}
-					m, err := weightsMom.GetOperand(f, i, kx, ky)
+					mw, err := weightsMom.GetOperand(outF, inF, kx, ky)
 					if err != nil {
 						return err
 					}
-					nw, err := p.NWeights.GetOperand(f, i, kx, ky)
+					nw, err := p.NWeights.GetOperand(outF, inF, kx, ky)
 					if err != nil {
 						return err
 					}
-					ops := make([]*number.Scalar[T], 0, outShape[1]*outShape[2])
-					for ox := uint(0); ox < outShape[1]; ox++ {
-						for oy := uint(0); oy < outShape[2]; oy++ {
-							ix := ox*p.SY + kx
-							iy := oy*p.SY + ky
-							if ix < inShape[1] || iy < inShape[2] {
-								in, err = p.Input.GetOperand(i, ix, iy)
-								if err != nil {
-									return err
-								}
-							} else {
-								in = &number.Scalar[T]{}
-							}
-							dif, err := dif.GetOperand(f, ox, oy)
+
+					ops := make([]*number.Scalar[T], 0, inShape[1]*inShape[2])
+					for x := uint(0); x < inShape[1]; x++ {
+						outX := x*p.SX + kx
+						for y := uint(0); y < inShape[2]; y++ {
+							outY := y*p.SY + ky
+
+							in, err := p.Input.GetOperand(inF, x, y)
 							if err != nil {
 								return err
 							}
-							inDif := &number.Scalar[T]{}
+
+							d, err := dif.GetOperand(outF, outX, outY)
+							if err != nil {
+								return err
+							}
+
+							din := &number.Scalar[T]{}
 							ctx.Push(&operation.Mul[T]{
-								Scalar: inDif,
-								A:      dif,
+								Scalar: din,
+								A:      d,
 								B:      in,
 							})
-							ops = append(ops, inDif)
+
+							ops = append(ops, din)
 						}
 					}
+
 					dw := &number.Scalar[T]{}
 					ctx.Push(&operation.Sum[T]{
 						Scalar: dw,
@@ -285,10 +321,10 @@ func (p *Conv2D[T]) BuildBackpropagation(
 					})
 					ctx.Push(&operation.Sum[T]{
 						Scalar: nw,
-						Args:   []*number.Scalar[T]{w, dw, m},
+						Args:   []*number.Scalar[T]{w, dw, mw},
 					})
 					ctx.Push(&operation.Set[T]{
-						Scalar: m,
+						Scalar: mw,
 						O:      dw,
 					})
 				}
