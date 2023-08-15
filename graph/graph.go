@@ -24,6 +24,22 @@ func NewGraph[T types.Number](t tensor.Tensor[T]) (*Graph, error) {
 	return &Graph{ctx.GetOps()}, nil
 }
 
+func NewEmptyGraph[T types.Number]() *Graph {
+	return &Graph{
+		Operations: []operation.Operation{},
+	}
+}
+
+func NewFromGraph[T types.Number](g *Graph) *Graph {
+	return &Graph{
+		Operations: append([]operation.Operation{}, g.Operations...),
+	}
+}
+
+func (p *Graph) AddFronGraph(g *Graph) {
+	p.Operations = append(p.Operations, g.Operations...)
+}
+
 func (p *Graph) Exec() {
 	//for _, o := range p.Operations {
 	//	o.Lock()

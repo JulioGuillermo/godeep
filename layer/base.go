@@ -200,10 +200,10 @@ func (p *Base[T]) Fit() error {
 			return err
 		}
 	}
-	if p.Bias != nil && p.NBias != nil {
-		return p.Bias.LoadFromTensor(p.NBias)
+	if p.Bias == nil && p.NBias == nil {
+		return nil
 	}
-	return nil
+	return p.Bias.LoadFromTensor(p.NBias)
 }
 
 func (p *Base[T]) SetTrainable(t bool) {
