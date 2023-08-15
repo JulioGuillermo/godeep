@@ -100,3 +100,11 @@ func (p *Model[T]) Load(r io.Reader) error {
 func (p *Model[T]) Save(w io.Writer) error {
 	return p.LastLayer.Save(w)
 }
+
+func (p *Model[T]) ResetLoad() {
+	p.LastLayer.ResetLoad()
+}
+
+func (p *Model[T]) ResetSave() {
+	p.LastLayer.ResetSave()
+}
