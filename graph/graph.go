@@ -36,8 +36,12 @@ func NewFromGraph[T types.Number](g *Graph) *Graph {
 	}
 }
 
-func (p *Graph) AddFronGraph(g *Graph) {
+func (p *Graph) AddFromGraph(g *Graph) {
 	p.Operations = append(p.Operations, g.Operations...)
+}
+
+func (p *Graph) PushOperations(ops ...operation.Operation) {
+	p.Operations = append(p.Operations, ops...)
 }
 
 func (p *Graph) Exec() {

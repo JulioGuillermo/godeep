@@ -100,7 +100,10 @@ func (p *Concat[T]) BuildBackpropagation(ctx *context.Context, a, m *number.Scal
 	Dif := p.Dif
 	if p.Ref.Value > 1 {
 		Dif = tensor.DivScalar(Dif, p.Ref)
-		Dif.BuildGraph(ctx)
+	}
+	err := Dif.BuildGraph(ctx)
+	if err != nil {
+		return err
 	}
 
 	// dif1 := tensor.SubTensor(Dif, p.dim, 0, s1)
@@ -121,7 +124,7 @@ func (p *Concat[T]) BuildBackpropagation(ctx *context.Context, a, m *number.Scal
 	//	return err
 	//}
 
-	err := p.l1.BuildBackpropagation(ctx, a, m)
+	err = p.l1.BuildBackpropagation(ctx, a, m)
 	if err != nil {
 		return err
 	}

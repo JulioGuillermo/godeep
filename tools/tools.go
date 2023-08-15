@@ -44,6 +44,7 @@ func GetIndex(mul, shape, index []uint) (uint, error) {
 		)
 	}
 	if len(shape) != len(index) {
+		panic("kkk")
 		return 0, errors.FmtNeuralError(
 			"Invalid index dimensions %d for internal dimensions %d",
 			len(index),

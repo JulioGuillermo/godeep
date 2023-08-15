@@ -33,6 +33,7 @@ type Model[T types.Number] struct {
 
 	GraphFeedForward     *graph.Graph
 	GraphBackPropagation *graph.Graph
+	GraphCalDif          *graph.Graph
 	GraphResetFit        *graph.Graph
 	GraphReset           *graph.Graph
 }
@@ -46,6 +47,76 @@ func FromInOut[T types.Number](in, out layer.Layer[T]) (*Model[T], error) {
 		FirstLayer: in,
 		LastLayer:  out,
 	}, nil
+}
+
+func FromModels[T types.Number](models ...*Model[T]) (*Model[T], error) {
+	if len(models) == 0 {
+		return nil, errors.FmtNeuralError("Can not create a model from 0 models")
+	}
+	m := NewModel[T]()
+
+	size := len(models)
+
+	m.FirstLayer = models[0].FirstLayer
+	m.Input = models[0].Input
+
+	m.LastLayer = models[size-1].LastLayer
+	m.Output = models[size-1].Output
+	m.Target = models[size-1].Target
+	m.Alpha = models[size-1].Alpha
+	m.Momentum = models[size-1].Momentum
+	m.Loss = models[size-1].Loss
+
+	m.GraphFeedForward = graph.NewEmptyGraph[T]()
+	for i, mod := range models {
+		if mod.GraphFeedForward == nil {
+			return nil, errors.FmtNeuralError(
+				"Model %d: FeedForward is not compiled (FeedForward)",
+				i,
+			)
+		}
+		m.GraphFeedForward.AddFromGraph(mod.GraphFeedForward)
+	}
+
+	m.GraphReset = graph.NewEmptyGraph[T]()
+	for i, mod := range models {
+		if mod.GraphReset == nil {
+			return nil, errors.FmtNeuralError("Model %d: FeedForward is not compiled (Reset)", i)
+		}
+		m.GraphReset.AddFromGraph(mod.GraphReset)
+	}
+
+	m.GraphResetFit = graph.NewEmptyGraph[T]()
+	for i, mod := range models {
+		if mod.GraphResetFit == nil {
+			return nil, errors.FmtNeuralError(
+				"Model %d: BackPropagation is not compiled (ResetFit)",
+				i,
+			)
+		}
+		m.GraphResetFit.AddFromGraph(mod.GraphResetFit)
+	}
+
+	m.GraphCalDif = graph.NewFromGraph[float32](models[size-1].GraphCalDif)
+	if models[size-1].GraphCalDif == nil {
+		return nil, errors.FmtNeuralError(
+			"Last model %d: BackPropagation is not compiled (CalDif)",
+			size-1,
+		)
+	}
+
+	m.GraphBackPropagation = graph.NewEmptyGraph[T]()
+	for i := size - 1; i >= 0; i-- {
+		if models[i].GraphBackPropagation == nil {
+			return nil, errors.FmtNeuralError(
+				"Model %d: BackPropagation is not compiled (BackPropagation)",
+				i,
+			)
+		}
+		m.GraphBackPropagation.AddFromGraph(models[i].GraphBackPropagation)
+	}
+
+	return m, nil
 }
 
 func (p *Model[T]) Push(l layer.Layer[T]) *Model[T] {
@@ -98,10 +169,11 @@ func (p *Model[T]) Compile() error {
 func (p *Model[T]) CompileBackPropagation() error {
 	ctx := &context.Context{}
 
-	p.Alpha = &number.Scalar[T]{}
-	p.Momentum = &number.Scalar[T]{}
-
 	dif := p.LastLayer.GetDif().SetBuild(false)
+	err := dif.BuildGraph(ctx)
+	if err != nil {
+		return err
+	}
 	p.Target = tensor.NewZeros[T](p.Output.GetShape()...)
 	out_ops := p.Output.GetOperands()
 	tar_ops := p.Target.GetOperands()
@@ -119,7 +191,16 @@ func (p *Model[T]) CompileBackPropagation() error {
 	loss.BuildGraph(ctx)
 	p.Loss = loss.GetOperands()[0]
 
-	err := p.LastLayer.BuildBackpropagation(ctx, p.Alpha, p.Momentum)
+	cd, err := graph.NewGraphFrom[T](ctx)
+	p.GraphCalDif = cd
+
+	ctx = &context.Context{}
+
+	p.Alpha = &number.Scalar[T]{}
+	p.Momentum = &number.Scalar[T]{}
+
+	p.LastLayer.GetDif().SetBuild(false)
+	err = p.LastLayer.BuildBackpropagation(ctx, p.Alpha, p.Momentum)
 	if err != nil {
 		return err
 	}
@@ -170,7 +251,7 @@ func (p *Model[T]) Predict(t tensor.Tensor[T]) (tensor.Tensor[T], error) {
 	return p.Output.Copy(), nil
 }
 
-func (p *Model[T]) fit(x, y tensor.Tensor[T]) error {
+func (p *Model[T]) ExecFit(x, y tensor.Tensor[T]) error {
 	p.GraphResetFit.Exec()
 
 	err := p.Input.LoadFromTensor(x)
@@ -183,6 +264,7 @@ func (p *Model[T]) fit(x, y tensor.Tensor[T]) error {
 	}
 
 	p.GraphFeedForward.Exec()
+	p.GraphCalDif.Exec()
 	p.GraphBackPropagation.Exec()
 
 	return p.LastLayer.Fit()
@@ -200,7 +282,7 @@ func (p *Model[T]) TrainOne(
 	}
 	p.Alpha.Value = alpha
 	p.Momentum.Value = momentum
-	err := p.fit(input, target)
+	err := p.ExecFit(input, target)
 	if err != nil {
 		return -1, err
 	}
@@ -244,7 +326,7 @@ func (p *Model[T]) Train(
 	for i := uint(0); i < epochs; i++ {
 		for j := uint(1); j <= batch; j++ {
 			index := rand.Intn(len(inputs))
-			err := p.fit(inputs[index], targets[index])
+			err := p.ExecFit(inputs[index], targets[index])
 			if err != nil {
 				return err
 			}
