@@ -176,6 +176,10 @@ func (p *Deconv2D[T]) BuildBackpropagation(
 	if p.Ref.Value > 1 {
 		Dif = tensor.DivScalar(Dif, p.Ref)
 	}
+	err := Dif.BuildGraph(ctx)
+	if err != nil {
+		return err
+	}
 
 	if p.PreLayer != nil {
 		der, err := p.PreLayer.BuildDer(ctx)
@@ -254,7 +258,7 @@ func (p *Deconv2D[T]) BuildBackpropagation(
 	deltaBias := tensor.Add(dif, biasMom)
 
 	p.NBias = tensor.Add(p.Bias, deltaBias)
-	err := p.NBias.BuildGraph(ctx)
+	err = p.NBias.BuildGraph(ctx)
 	if err != nil {
 		return err
 	}

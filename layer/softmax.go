@@ -82,10 +82,10 @@ func (p *SoftMax[T]) BuildBackpropagation(ctx *context.Context, a, m *number.Sca
 	Dif := p.Dif
 	if p.Ref.Value > 1 {
 		Dif = tensor.DivScalar(Dif, p.Ref)
-		err := Dif.BuildGraph(ctx)
-		if err != nil {
-			return err
-		}
+	}
+	err := Dif.BuildGraph(ctx)
+	if err != nil {
+		return err
 	}
 
 	return p.PostBuildBackpropagation(ctx, a, m)
