@@ -175,18 +175,6 @@ func (p *Concat[T]) Load(r io.Reader) error {
 		}
 	}
 
-	if p.Weights != nil {
-		err := p.Weights.Load(r)
-		if err != nil {
-			return err
-		}
-	}
-	if p.Bias != nil {
-		err := p.Bias.Load(r)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -209,18 +197,6 @@ func (p *Concat[T]) Save(w io.Writer) error {
 		}
 	}
 
-	if p.Weights != nil {
-		err := p.Weights.Save(w)
-		if err != nil {
-			return err
-		}
-	}
-	if p.Bias != nil {
-		err := p.Bias.Save(w)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

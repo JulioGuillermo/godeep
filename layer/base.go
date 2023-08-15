@@ -194,9 +194,14 @@ func (p *Base[T]) Fit() error {
 	if !p.Trainable {
 		return nil
 	}
-	err := p.Weights.LoadFromTensor(p.NWeights)
-	if err != nil {
-		return err
+	if p.Weights != nil && p.NWeights != nil {
+		err := p.Weights.LoadFromTensor(p.NWeights)
+		if err != nil {
+			return err
+		}
+	}
+	if p.Bias == nil && p.NBias == nil {
+		return nil
 	}
 	return p.Bias.LoadFromTensor(p.NBias)
 }

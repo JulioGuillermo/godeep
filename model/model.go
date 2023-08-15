@@ -24,17 +24,17 @@ type Model[T types.Number] struct {
 	FirstLayer layer.Layer[T]
 	LastLayer  layer.Layer[T]
 
-	input    tensor.Tensor[T]
-	output   tensor.Tensor[T]
-	target   tensor.Tensor[T]
-	alpha    *number.Scalar[T]
-	momentum *number.Scalar[T]
-	loss     *number.Scalar[T]
+	Input    tensor.Tensor[T]
+	Output   tensor.Tensor[T]
+	Target   tensor.Tensor[T]
+	Alpha    *number.Scalar[T]
+	Momentum *number.Scalar[T]
+	Loss     *number.Scalar[T]
 
-	feedForward     *graph.Graph
-	backPropagation *graph.Graph
-	resetFit        *graph.Graph
-	reset           *graph.Graph
+	GraphFeedForward     *graph.Graph
+	GraphBackPropagation *graph.Graph
+	GraphResetFit        *graph.Graph
+	GraphReset           *graph.Graph
 }
 
 func NewModel[T types.Number]() *Model[T] {
@@ -87,24 +87,24 @@ func (p *Model[T]) Compile() error {
 		return err
 	}
 
-	p.feedForward = ff
-	p.reset = reset
-	p.input = p.FirstLayer.GetInputs()
-	p.output = p.LastLayer.GetOutputs()
-	p.target = p.output.Copy()
+	p.GraphFeedForward = ff
+	p.GraphReset = reset
+	p.Input = p.FirstLayer.GetInputs()
+	p.Output = p.LastLayer.GetOutputs()
+	p.Target = p.Output.Copy()
 	return nil
 }
 
 func (p *Model[T]) CompileBackPropagation() error {
 	ctx := &context.Context{}
 
-	p.alpha = &number.Scalar[T]{}
-	p.momentum = &number.Scalar[T]{}
+	p.Alpha = &number.Scalar[T]{}
+	p.Momentum = &number.Scalar[T]{}
 
 	dif := p.LastLayer.GetDif().SetBuild(false)
-	p.target = tensor.NewZeros[T](p.output.GetShape()...)
-	out_ops := p.output.GetOperands()
-	tar_ops := p.target.GetOperands()
+	p.Target = tensor.NewZeros[T](p.Output.GetShape()...)
+	out_ops := p.Output.GetOperands()
+	tar_ops := p.Target.GetOperands()
 	dif_ops := dif.GetOperands()
 	for i := range tar_ops {
 		ctx.Push(&operation.Sub[T]{
@@ -117,9 +117,9 @@ func (p *Model[T]) CompileBackPropagation() error {
 	loss := tensor.Abs(dif)
 	loss = tensor.Sum(loss)
 	loss.BuildGraph(ctx)
-	p.loss = loss.GetOperands()[0]
+	p.Loss = loss.GetOperands()[0]
 
-	err := p.LastLayer.BuildBackpropagation(ctx, p.alpha, p.momentum)
+	err := p.LastLayer.BuildBackpropagation(ctx, p.Alpha, p.Momentum)
 	if err != nil {
 		return err
 	}
@@ -139,51 +139,51 @@ func (p *Model[T]) CompileBackPropagation() error {
 		return err
 	}
 
-	p.backPropagation = bp
-	p.resetFit = rf
+	p.GraphBackPropagation = bp
+	p.GraphResetFit = rf
 	return nil
 }
 
 func (p *Model[T]) ResetIS() error {
-	if p.feedForward == nil {
+	if p.GraphFeedForward == nil {
 		err := p.Compile()
 		if err != nil {
 			return err
 		}
 	}
-	p.reset.Exec()
+	p.GraphReset.Exec()
 	return nil
 }
 
 func (p *Model[T]) Predict(t tensor.Tensor[T]) (tensor.Tensor[T], error) {
-	if p.feedForward == nil {
+	if p.GraphFeedForward == nil {
 		err := p.Compile()
 		if err != nil {
 			return nil, err
 		}
 	}
-	err := p.input.LoadFromTensor(t)
+	err := p.Input.LoadFromTensor(t)
 	if err != nil {
 		return nil, err
 	}
-	p.feedForward.Exec()
-	return p.output.Copy(), nil
+	p.GraphFeedForward.Exec()
+	return p.Output.Copy(), nil
 }
 
 func (p *Model[T]) fit(x, y tensor.Tensor[T]) error {
-	p.resetFit.Exec()
+	p.GraphResetFit.Exec()
 
-	err := p.input.LoadFromTensor(x)
+	err := p.Input.LoadFromTensor(x)
 	if err != nil {
 		return err
 	}
-	err = p.target.LoadFromTensor(y)
+	err = p.Target.LoadFromTensor(y)
 	if err != nil {
 		return err
 	}
 
-	p.feedForward.Exec()
-	p.backPropagation.Exec()
+	p.GraphFeedForward.Exec()
+	p.GraphBackPropagation.Exec()
 
 	return p.LastLayer.Fit()
 }
@@ -192,19 +192,19 @@ func (p *Model[T]) TrainOne(
 	input, target tensor.Tensor[T],
 	alpha, momentum T,
 ) (T, error) {
-	if p.backPropagation == nil {
+	if p.GraphBackPropagation == nil {
 		err := p.CompileBackPropagation()
 		if err != nil {
 			return -1, err
 		}
 	}
-	p.alpha.Value = alpha
-	p.momentum.Value = momentum
+	p.Alpha.Value = alpha
+	p.Momentum.Value = momentum
 	err := p.fit(input, target)
 	if err != nil {
 		return -1, err
 	}
-	return p.loss.Value, err
+	return p.Loss.Value, err
 }
 
 func (p *Model[T]) Train(
@@ -219,14 +219,14 @@ func (p *Model[T]) Train(
 			len(targets),
 		)
 	}
-	if p.backPropagation == nil {
+	if p.GraphBackPropagation == nil {
 		err := p.CompileBackPropagation()
 		if err != nil {
 			return err
 		}
 	}
-	p.alpha.Value = alpha
-	p.momentum.Value = momentum
+	p.Alpha.Value = alpha
+	p.Momentum.Value = momentum
 	if batch == 0 {
 		batch = uint(len(inputs))
 	}
@@ -255,7 +255,7 @@ func (p *Model[T]) Train(
 				sProg := fmt.Sprintf("%.2f%%", prog*100)
 				sI := fmt.Sprint(i)
 				sJ := fmt.Sprint(j)
-				sLoss := fmt.Sprintf("%.8f", float64(p.loss.Value))
+				sLoss := fmt.Sprintf("%.8f", float64(p.Loss.Value))
 				lLoss := 10 - len(sLoss)
 				if lLoss < 0 {
 					lLoss = 0
@@ -291,7 +291,7 @@ func (p *Model[T]) Train(
 		"\r[100.00%%] %d / %d => %f",
 		epochs,
 		epochs,
-		float64(p.loss.Value),
+		float64(p.Loss.Value),
 	)
 	fmt.Println(info, tools.Bar(1, width-len(info)-1))
 
