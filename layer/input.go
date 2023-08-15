@@ -52,7 +52,7 @@ func (p *Input[T]) BuildFeedforward(ctx *context.Context) error {
 	}
 
 	if p.PreLayer != nil {
-		p.Input = p.PreLayer.GetInputs()
+		p.Input = p.PreLayer.GetOutputs()
 		p.Output = p.PreLayer.GetOutputs()
 		// p.Neta = p.PreLayer.GetNetas()
 		p.Dif = p.PreLayer.GetDif()
