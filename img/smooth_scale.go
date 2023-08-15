@@ -1,5 +1,11 @@
 package img
 
+import (
+	"github.com/julioguillermo/godeep/errors"
+	"github.com/julioguillermo/godeep/tensor"
+	"github.com/julioguillermo/godeep/types"
+)
+
 //func smoothResize(src image.Image, newWidth, newHeight int) image.Image {
 //    // Crea una nueva imagen con el tamaño especificado
 //    dst := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
@@ -48,3 +54,67 @@ package img
 //
 //    return dst
 //}
+
+func SmoothScale[T types.Number](
+	img tensor.Tensor[T],
+	width, height uint,
+) (tensor.Tensor[T], error) {
+	shape := img.GetShape()
+	if len(shape) != 3 {
+		return nil, errors.FmtNeuralError("The given tensor is not an image")
+	}
+
+	scaleX := float64(shape[1]) / float64(width)
+	scaleY := float64(shape[2]) / float64(height)
+	t := tensor.NewZeros[T](4, width, height)
+
+	// Realiza el escalado suave de la imagen
+	for x := uint(0); x < width; x++ {
+		for y := uint(0); y < height; y++ {
+			// Calcula las coordenadas correspondientes en la imagen original
+			srcX := uint(float64(x) * scaleX)
+			srcY := uint(float64(y) * scaleY)
+
+			// Calcula los pesos de interpolación
+			dx := float64(x)*scaleX - float64(srcX)
+			dy := float64(y)*scaleY - float64(srcY)
+
+			for d := uint(0); d < shape[0]; d++ {
+				// Obtiene los píxeles vecinos
+				p1, err := img.Get(d, srcX, srcY)
+				if err != nil {
+					return nil, err
+				}
+				p2, err := img.Get(d, srcX+1, srcY)
+				if err != nil {
+					return nil, err
+				}
+				p3, err := img.Get(d, srcX, srcY+1)
+				if err != nil {
+					return nil, err
+				}
+				p4, err := img.Get(d, srcX+1, srcY+1)
+				if err != nil {
+					return nil, err
+				}
+
+				p := T(
+					(1.0-dx)*(1.0-dy)*float64(
+						p1,
+					) + dx*(1.0-dy)*float64(
+						p2,
+					) + (1.0-dx)*dy*float64(
+						p3,
+					) + dx*dy*float64(
+						p4,
+					),
+				)
+
+				// Asigna el nuevo color al píxel en la imagen escalada
+				t.Set(p, d, uint(x), uint(y))
+			}
+		}
+	}
+
+	return t, nil
+}
