@@ -95,7 +95,7 @@ func (p *Model[T]) Compile() error {
 	return nil
 }
 
-func (p *Model[T]) buildBackPropagation() error {
+func (p *Model[T]) CompileBackPropagation() error {
 	ctx := &context.Context{}
 
 	p.alpha = &number.Scalar[T]{}
@@ -193,7 +193,7 @@ func (p *Model[T]) TrainOne(
 	alpha, momentum T,
 ) (T, error) {
 	if p.backPropagation == nil {
-		err := p.buildBackPropagation()
+		err := p.CompileBackPropagation()
 		if err != nil {
 			return -1, err
 		}
@@ -220,7 +220,7 @@ func (p *Model[T]) Train(
 		)
 	}
 	if p.backPropagation == nil {
-		err := p.buildBackPropagation()
+		err := p.CompileBackPropagation()
 		if err != nil {
 			return err
 		}
