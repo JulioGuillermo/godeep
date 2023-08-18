@@ -12,7 +12,7 @@ func TestAbs(t *testing.T) {
 	shape := []uint{50, 50, 20}
 
 	m := tensor.NewNormRand[float32](shape...)
-	r := tensor.Abs(m)
+	r := tensor.Abs[float32](m)
 
 	g, err := graph.NewGraph(r)
 	if err != nil {
@@ -25,6 +25,21 @@ func TestAbs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	mops := m.GetOperands()
+	for i, o := range r.GetOperands() {
+		if (mops[i].Value < 0 && -mops[i].Value != o.Value) ||
+			(mops[i].Value >= 0 && mops[i].Value != o.Value) {
+			t.Fatalf("Operands at %d are differents: %f != %f", i, o.Value, mops[i].Value)
+		}
+	}
+}
+
+func TestHotAbs(t *testing.T) {
+	shape := []uint{50, 50, 20}
+
+	m := tensor.NewNormRand[float32](shape...)
+	r := m.Abs()
 
 	mops := m.GetOperands()
 	for i, o := range r.GetOperands() {

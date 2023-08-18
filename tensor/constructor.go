@@ -15,7 +15,7 @@ func initMat[T types.Number](shape []uint) *TensorMat[T] {
 	}
 }
 
-func NewZeros[T types.Number](shape ...uint) Tensor[T] {
+func NewZeros[T types.Number](shape ...uint) *TensorMat[T] {
 	data := make([]*number.Scalar[T], tools.GetDataSize(shape))
 	for i := range data {
 		data[i] = &number.Scalar[T]{Value: 0}
@@ -25,7 +25,7 @@ func NewZeros[T types.Number](shape ...uint) Tensor[T] {
 	return mat
 }
 
-func NewOnes[T types.Number](shape ...uint) Tensor[T] {
+func NewOnes[T types.Number](shape ...uint) *TensorMat[T] {
 	data := make([]*number.Scalar[T], tools.GetDataSize(shape))
 	for i := range data {
 		data[i] = &number.Scalar[T]{Value: 1}
@@ -35,7 +35,7 @@ func NewOnes[T types.Number](shape ...uint) Tensor[T] {
 	return mat
 }
 
-func NewRand[T types.Number](min, max float64, shape ...uint) Tensor[T] {
+func NewRand[T types.Number](min, max float64, shape ...uint) *TensorMat[T] {
 	data := make([]*number.Scalar[T], tools.GetDataSize(shape))
 	for i := range data {
 		data[i] = &number.Scalar[T]{Value: T(rand.Float64()*(max-min) + min)}
@@ -45,7 +45,7 @@ func NewRand[T types.Number](min, max float64, shape ...uint) Tensor[T] {
 	return mat
 }
 
-func NewNormRand[T types.Number](shape ...uint) Tensor[T] {
+func NewNormRand[T types.Number](shape ...uint) *TensorMat[T] {
 	data := make([]*number.Scalar[T], tools.GetDataSize(shape))
 	for i := range data {
 		data[i] = &number.Scalar[T]{Value: T(rand.NormFloat64())}
@@ -55,7 +55,7 @@ func NewNormRand[T types.Number](shape ...uint) Tensor[T] {
 	return mat
 }
 
-func NewFromValues[T types.Number](values []T, shape ...uint) Tensor[T] {
+func NewFromValues[T types.Number](values []T, shape ...uint) *TensorMat[T] {
 	data := make([]*number.Scalar[T], tools.GetDataSize(shape))
 
 	size := len(data)
@@ -74,32 +74,4 @@ func NewFromValues[T types.Number](values []T, shape ...uint) Tensor[T] {
 	mat := initMat[T](shape)
 	mat.Operands = data
 	return mat
-}
-
-func NewScalar[T types.Number](val T) *number.Scalar[T] {
-	return &number.Scalar[T]{
-		Value: val,
-	}
-}
-
-func ScalarZero[T types.Number]() *number.Scalar[T] {
-	return &number.Scalar[T]{}
-}
-
-func ScalarOne[T types.Number]() *number.Scalar[T] {
-	return &number.Scalar[T]{
-		Value: 1,
-	}
-}
-
-func ScalarRand[T types.Number](min, max T) *number.Scalar[T] {
-	return &number.Scalar[T]{
-		Value: T(rand.Float64())*(max-min) + min,
-	}
-}
-
-func ScalarNorm[T types.Number]() *number.Scalar[T] {
-	return &number.Scalar[T]{
-		Value: T(rand.NormFloat64()),
-	}
 }

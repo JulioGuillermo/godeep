@@ -4,6 +4,7 @@ import (
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/tools"
 	"github.com/julioguillermo/godeep/types"
 )
 
@@ -65,4 +66,28 @@ func (p *TensorSoftMax[T]) BuildGraph(ctx *context.Context) error {
 	}
 
 	return nil
+}
+
+func (p *TensorMat[T]) SoftMax() *TensorMat[T] {
+	shape := p.GetShape()
+	mulIndex := p.GetMulIndex()
+	ops := make([]*number.Scalar[T], p.GetSize())
+
+	min := tools.Min(p.Operands)
+	sum := T(0)
+	for _, o := range p.Operands {
+		sum += o.Value - min
+	}
+
+	for i, o := range p.Operands {
+		ops[i] = &number.Scalar[T]{
+			Value: (o.Value - min) / sum,
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    shape,
+		MulIndex: mulIndex,
+		Operands: ops,
+	}
 }

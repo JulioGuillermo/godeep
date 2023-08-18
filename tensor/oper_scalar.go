@@ -65,3 +65,71 @@ func (p *TensorOpScalar[T]) BuildGraph(ctx *context.Context) error {
 
 	return nil
 }
+
+func (p *TensorMat[T]) AddScalar(n *number.Scalar[T]) *TensorMat[T] {
+	opA := p.GetOperands()
+
+	ops := make([]*number.Scalar[T], p.GetSize())
+	for i := range p.Operands {
+		ops[i] = &number.Scalar[T]{
+			Value: opA[i].Value + n.Value,
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    p.GetShape(),
+		MulIndex: p.GetMulIndex(),
+		Operands: ops,
+	}
+}
+
+func (p *TensorMat[T]) SubScalar(n *number.Scalar[T]) *TensorMat[T] {
+	opA := p.GetOperands()
+
+	ops := make([]*number.Scalar[T], p.GetSize())
+	for i := range p.Operands {
+		ops[i] = &number.Scalar[T]{
+			Value: opA[i].Value - n.Value,
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    p.GetShape(),
+		MulIndex: p.GetMulIndex(),
+		Operands: ops,
+	}
+}
+
+func (p *TensorMat[T]) MulScalar(n *number.Scalar[T]) *TensorMat[T] {
+	opA := p.GetOperands()
+
+	ops := make([]*number.Scalar[T], p.GetSize())
+	for i := range p.Operands {
+		ops[i] = &number.Scalar[T]{
+			Value: opA[i].Value * n.Value,
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    p.GetShape(),
+		MulIndex: p.GetMulIndex(),
+		Operands: ops,
+	}
+}
+
+func (p *TensorMat[T]) DivScalar(n *number.Scalar[T]) *TensorMat[T] {
+	opA := p.GetOperands()
+
+	ops := make([]*number.Scalar[T], p.GetSize())
+	for i := range p.Operands {
+		ops[i] = &number.Scalar[T]{
+			Value: opA[i].Value / n.Value,
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    p.GetShape(),
+		MulIndex: p.GetMulIndex(),
+		Operands: ops,
+	}
+}

@@ -34,6 +34,9 @@ func TestTSum(t *testing.T) {
 	}
 
 	f, err := r.Get(0)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if f != sum {
 		t.Fatal(f, "!=", sum)
 	}
@@ -67,6 +70,9 @@ func TestTAvg(t *testing.T) {
 	sum /= float32(m.GetSize())
 
 	f, err := r.Get(0)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if f != sum {
 		t.Fatal(f, "!=", sum)
 	}
@@ -101,6 +107,9 @@ func TestTMax(t *testing.T) {
 	}
 
 	f, err := r.Get(0)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if f != sum {
 		t.Fatal(f, "!=", sum)
 	}
@@ -135,6 +144,126 @@ func TestTMin(t *testing.T) {
 	}
 
 	f, err := r.Get(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f != sum {
+		t.Fatal(f, "!=", sum)
+	}
+}
+
+func TestHotTSum(t *testing.T) {
+	shape := []uint{50, 50, 20}
+
+	m := tensor.NewNormRand[float32](shape...)
+	r := m.Sum()
+
+	sum := float32(0)
+	for i := uint(0); i < shape[0]; i++ {
+		for j := uint(0); j < shape[1]; j++ {
+			for k := uint(0); k < shape[2]; k++ {
+				n, err := m.Get(i, j, k)
+				if err != nil {
+					t.Fatal(err)
+				}
+				sum += n
+			}
+		}
+	}
+
+	f, err := r.Get(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f != sum {
+		t.Fatal(f, "!=", sum)
+	}
+}
+
+func TestHotTAvg(t *testing.T) {
+	shape := []uint{50, 50, 20}
+
+	m := tensor.NewNormRand[float32](shape...)
+	r := m.Avg()
+
+	sum := float32(0)
+	for i := uint(0); i < shape[0]; i++ {
+		for j := uint(0); j < shape[1]; j++ {
+			for k := uint(0); k < shape[2]; k++ {
+				n, err := m.Get(i, j, k)
+				if err != nil {
+					t.Fatal(err)
+				}
+				sum += n
+			}
+		}
+	}
+	sum /= float32(m.GetSize())
+
+	f, err := r.Get(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f != sum {
+		t.Fatal(f, "!=", sum)
+	}
+}
+
+func TestHotTMax(t *testing.T) {
+	shape := []uint{50, 50, 20}
+
+	m := tensor.NewNormRand[float32](shape...)
+	r := m.Max()
+
+	sum := float32(0)
+	for i := uint(0); i < shape[0]; i++ {
+		for j := uint(0); j < shape[1]; j++ {
+			for k := uint(0); k < shape[2]; k++ {
+				n, err := m.Get(i, j, k)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if sum < n {
+					sum = n
+				}
+			}
+		}
+	}
+
+	f, err := r.Get(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f != sum {
+		t.Fatal(f, "!=", sum)
+	}
+}
+
+func TestHotTMin(t *testing.T) {
+	shape := []uint{50, 50, 20}
+
+	m := tensor.NewNormRand[float32](shape...)
+	r := m.Min()
+
+	sum := float32(0)
+	for i := uint(0); i < shape[0]; i++ {
+		for j := uint(0); j < shape[1]; j++ {
+			for k := uint(0); k < shape[2]; k++ {
+				n, err := m.Get(i, j, k)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if sum > n {
+					sum = n
+				}
+			}
+		}
+	}
+
+	f, err := r.Get(0)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if f != sum {
 		t.Fatal(f, "!=", sum)
 	}

@@ -42,3 +42,23 @@ func (p *TensorAbs[T]) BuildGraph(ctx *context.Context) error {
 
 	return nil
 }
+
+func (p *TensorMat[T]) Abs() *TensorMat[T] {
+	ops := make([]*number.Scalar[T], p.GetSize())
+	for i := range ops {
+		if p.Operands[i].Value < 0 {
+			ops[i] = &number.Scalar[T]{
+				Value: -p.Operands[i].Value,
+			}
+		} else {
+			ops[i] = &number.Scalar[T]{
+				Value: p.Operands[i].Value,
+			}
+		}
+	}
+	return &TensorMat[T]{
+		Shape:    p.GetShape(),
+		MulIndex: p.GetMulIndex(),
+		Operands: ops,
+	}
+}

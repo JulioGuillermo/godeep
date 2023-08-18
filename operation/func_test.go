@@ -3,8 +3,8 @@ package operation_test
 import (
 	"testing"
 
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
-	"github.com/julioguillermo/godeep/tensor"
 )
 
 func f(x float32) float32 {
@@ -12,8 +12,8 @@ func f(x float32) float32 {
 }
 
 func TestFunc(t *testing.T) {
-	r := tensor.NewScalar[float32](0)
-	o := tensor.NewScalar[float32](-234)
+	r := number.NewScalar[float32](0)
+	o := number.NewScalar[float32](-234)
 
 	oper := &operation.Func[float32]{
 		Scalar: r,

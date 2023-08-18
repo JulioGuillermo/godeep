@@ -229,3 +229,7 @@ func (p *TensorMat[T]) Load(r io.Reader) error {
 
 	return nil
 }
+
+func (p *TensorMat[T]) GetMatrix() *TensorMat[T] {
+	return p
+}

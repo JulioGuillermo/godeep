@@ -89,3 +89,119 @@ func (p *TensorDimMath[T]) BuildGraph(ctx *context.Context) error {
 
 	return nil
 }
+
+func (p *TensorMat[T]) DSum(dim uint) (*TensorMat[T], error) {
+	if dim >= uint(len(p.Shape)) {
+		return nil, errors.FmtNeuralError(
+			"Invalid subtensor dimension %d for a tensor with dimension %d",
+			dim,
+			len(p.Shape),
+		)
+	}
+
+	shape := p.GetShape()[:dim+1]
+	mulIndex := tools.GetIndexMul(shape)
+	ops := make([]*number.Scalar[T], tools.GetDataSize(shape))
+	mi := p.MulIndex[dim]
+
+	for i := range ops {
+		offset := uint(i) * mi
+		args := p.Operands[offset : offset+mi]
+		ops[i] = &number.Scalar[T]{
+			Value: tools.Sum[T](args),
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    shape,
+		MulIndex: mulIndex,
+		Operands: ops,
+	}, nil
+}
+
+func (p *TensorMat[T]) DAvg(dim uint) (*TensorMat[T], error) {
+	if dim >= uint(len(p.Shape)) {
+		return nil, errors.FmtNeuralError(
+			"Invalid subtensor dimension %d for a tensor with dimension %d",
+			dim,
+			len(p.Shape),
+		)
+	}
+
+	shape := p.GetShape()[:dim+1]
+	mulIndex := tools.GetIndexMul(shape)
+	ops := make([]*number.Scalar[T], tools.GetDataSize(shape))
+	mi := p.MulIndex[dim]
+
+	for i := range ops {
+		offset := uint(i) * mi
+		args := p.Operands[offset : offset+mi]
+		ops[i] = &number.Scalar[T]{
+			Value: tools.Avg[T](args),
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    shape,
+		MulIndex: mulIndex,
+		Operands: ops,
+	}, nil
+}
+
+func (p *TensorMat[T]) DMax(dim uint) (*TensorMat[T], error) {
+	if dim >= uint(len(p.Shape)) {
+		return nil, errors.FmtNeuralError(
+			"Invalid subtensor dimension %d for a tensor with dimension %d",
+			dim,
+			len(p.Shape),
+		)
+	}
+
+	shape := p.GetShape()[:dim+1]
+	mulIndex := tools.GetIndexMul(shape)
+	ops := make([]*number.Scalar[T], tools.GetDataSize(shape))
+	mi := p.MulIndex[dim]
+
+	for i := range ops {
+		offset := uint(i) * mi
+		args := p.Operands[offset : offset+mi]
+		ops[i] = &number.Scalar[T]{
+			Value: tools.Max[T](args),
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    shape,
+		MulIndex: mulIndex,
+		Operands: ops,
+	}, nil
+}
+
+func (p *TensorMat[T]) DMin(dim uint) (*TensorMat[T], error) {
+	if dim >= uint(len(p.Shape)) {
+		return nil, errors.FmtNeuralError(
+			"Invalid subtensor dimension %d for a tensor with dimension %d",
+			dim,
+			len(p.Shape),
+		)
+	}
+
+	shape := p.GetShape()[:dim+1]
+	mulIndex := tools.GetIndexMul(shape)
+	ops := make([]*number.Scalar[T], tools.GetDataSize(shape))
+	mi := p.MulIndex[dim]
+
+	for i := range ops {
+		offset := uint(i) * mi
+		args := p.Operands[offset : offset+mi]
+		ops[i] = &number.Scalar[T]{
+			Value: tools.Min[T](args),
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    shape,
+		MulIndex: mulIndex,
+		Operands: ops,
+	}, nil
+}
