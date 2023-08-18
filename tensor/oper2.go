@@ -76,3 +76,95 @@ func (p *TensorOp2[T]) BuildGraph(ctx *context.Context) error {
 
 	return nil
 }
+
+func (p *TensorMat[T]) Add(m *TensorMat[T]) (*TensorMat[T], error) {
+	e := tools.GetEqShapeErr("Binary operation", p.GetShape(), m.GetShape())
+	if e != nil {
+		return nil, e
+	}
+
+	opA := p.GetOperands()
+	opB := m.GetOperands()
+
+	ops := make([]*number.Scalar[T], p.GetSize())
+	for i := range p.Operands {
+		ops[i] = &number.Scalar[T]{
+			Value: opA[i].Value + opB[i].Value,
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    p.GetShape(),
+		MulIndex: p.GetMulIndex(),
+		Operands: ops,
+	}, nil
+}
+
+func (p *TensorMat[T]) Sub(m *TensorMat[T]) (*TensorMat[T], error) {
+	e := tools.GetEqShapeErr("Binary operation", p.GetShape(), m.GetShape())
+	if e != nil {
+		return nil, e
+	}
+
+	opA := p.GetOperands()
+	opB := m.GetOperands()
+
+	ops := make([]*number.Scalar[T], p.GetSize())
+	for i := range p.Operands {
+		ops[i] = &number.Scalar[T]{
+			Value: opA[i].Value - opB[i].Value,
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    p.GetShape(),
+		MulIndex: p.GetMulIndex(),
+		Operands: ops,
+	}, nil
+}
+
+func (p *TensorMat[T]) Mul(m *TensorMat[T]) (*TensorMat[T], error) {
+	e := tools.GetEqShapeErr("Binary operation", p.GetShape(), m.GetShape())
+	if e != nil {
+		return nil, e
+	}
+
+	opA := p.GetOperands()
+	opB := m.GetOperands()
+
+	ops := make([]*number.Scalar[T], p.GetSize())
+	for i := range p.Operands {
+		ops[i] = &number.Scalar[T]{
+			Value: opA[i].Value * opB[i].Value,
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    p.GetShape(),
+		MulIndex: p.GetMulIndex(),
+		Operands: ops,
+	}, nil
+}
+
+func (p *TensorMat[T]) Div(m *TensorMat[T]) (*TensorMat[T], error) {
+	e := tools.GetEqShapeErr("Binary operation", p.GetShape(), m.GetShape())
+	if e != nil {
+		return nil, e
+	}
+
+	opA := p.GetOperands()
+	opB := m.GetOperands()
+
+	ops := make([]*number.Scalar[T], p.GetSize())
+	for i := range p.Operands {
+		ops[i] = &number.Scalar[T]{
+			Value: opA[i].Value / opB[i].Value,
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    p.GetShape(),
+		MulIndex: p.GetMulIndex(),
+		Operands: ops,
+	}, nil
+}

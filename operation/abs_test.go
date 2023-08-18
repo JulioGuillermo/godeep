@@ -3,13 +3,13 @@ package operation_test
 import (
 	"testing"
 
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
-	"github.com/julioguillermo/godeep/tensor"
 )
 
 func TestAbsN(t *testing.T) {
-	r := tensor.NewScalar[float32](0)
-	o := tensor.NewScalar[float32](-234)
+	r := number.NewScalar[float32](0)
+	o := number.NewScalar[float32](-234)
 
 	oper := &operation.Abs[float32]{
 		Scalar: r,
@@ -28,8 +28,8 @@ func TestAbsN(t *testing.T) {
 }
 
 func TestAbsP(t *testing.T) {
-	r := tensor.NewScalar[float32](0)
-	o := tensor.NewScalar[float32](234)
+	r := number.NewScalar[float32](0)
+	o := number.NewScalar[float32](234)
 
 	oper := &operation.Abs[float32]{
 		Scalar: r,

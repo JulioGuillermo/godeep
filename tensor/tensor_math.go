@@ -4,6 +4,7 @@ import (
 	"github.com/julioguillermo/godeep/context"
 	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
+	"github.com/julioguillermo/godeep/tools"
 	"github.com/julioguillermo/godeep/types"
 )
 
@@ -69,4 +70,44 @@ func (p *TensorTensorMath[T]) BuildGraph(ctx *context.Context) error {
 	}
 
 	return nil
+}
+
+func (p *TensorMat[T]) Sum() *TensorMat[T] {
+	return &TensorMat[T]{
+		Shape:    []uint{1},
+		MulIndex: []uint{1},
+		Operands: []*number.Scalar[T]{{
+			Value: tools.Sum[T](p.Operands),
+		}},
+	}
+}
+
+func (p *TensorMat[T]) Avg() *TensorMat[T] {
+	return &TensorMat[T]{
+		Shape:    []uint{1},
+		MulIndex: []uint{1},
+		Operands: []*number.Scalar[T]{{
+			Value: tools.Avg[T](p.Operands),
+		}},
+	}
+}
+
+func (p *TensorMat[T]) Max() *TensorMat[T] {
+	return &TensorMat[T]{
+		Shape:    []uint{1},
+		MulIndex: []uint{1},
+		Operands: []*number.Scalar[T]{{
+			Value: tools.Max[T](p.Operands),
+		}},
+	}
+}
+
+func (p *TensorMat[T]) Min() *TensorMat[T] {
+	return &TensorMat[T]{
+		Shape:    []uint{1},
+		MulIndex: []uint{1},
+		Operands: []*number.Scalar[T]{{
+			Value: tools.Min[T](p.Operands),
+		}},
+	}
 }

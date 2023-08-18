@@ -89,20 +89,46 @@ func (p *TensorConcat[_]) concatLastDim(dimSize, index uint, oIndex []uint) erro
 	return nil
 }
 
-// TODO better way...
-//func (p *TensorConcat[_]) concatRecursive(dim, index uint, oIndex []uint) error {
-//	if dim == uint(len(p.Shape)) {
-//		return p.concatLastDim(index, oIndex)
-//	}
-//	for i := uint(0); i < p.Shape[dim]; i++ {
-//		err := p.concatRecursive(
-//			dim+1,
-//			index+i*p.MulIndex[dim],
-//			append(oIndex, i),
-//		)
-//		if err != nil {
-//			return err
-//		}
-//	}
-//	return nil
-//}
+func (p *TensorMat[T]) Concat(m *TensorMat[T], dim uint) (*TensorMat[T], error) {
+	dimSize := p.Shape[dim]
+	shape := p.GetShape()
+	shape[dim] += m.GetShape()[dim]
+	mulIndex := tools.GetIndexMul(shape)
+
+	ops := make([]*number.Scalar[T], p.GetSize()+m.GetSize())
+	for i := range ops {
+		idx := tools.ReverseIndex(mulIndex, shape, uint(i))
+		err := p.concatLastDim(ops, m, dim, dimSize, uint(i), idx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &TensorMat[T]{
+		Shape:    shape,
+		MulIndex: mulIndex,
+		Operands: ops,
+	}, nil
+}
+
+func (p *TensorMat[T]) concatLastDim(
+	ops []*number.Scalar[T],
+	m *TensorMat[T],
+	dim, dimSize, index uint,
+	oIndex []uint,
+) error {
+	if oIndex[dim] < dimSize {
+		o, err := p.GetOperand(oIndex...)
+		if err != nil {
+			return err
+		}
+		ops[index] = o
+	} else {
+		oIndex[dim] -= dimSize
+		o, err := m.GetOperand(oIndex...)
+		if err != nil {
+			return err
+		}
+		ops[index] = o
+	}
+	return nil
+}

@@ -14,6 +14,7 @@ type Tensor[T types.Number] interface {
 	GetSize() uint
 	GetOperands() []*number.Scalar[T]
 	GetOperand(...uint) (*number.Scalar[T], error)
+	GetMatrix() *TensorMat[T]
 
 	GetData() []T
 	LoadData([]T) error

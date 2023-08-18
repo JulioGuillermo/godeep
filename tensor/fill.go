@@ -47,3 +47,15 @@ func (p *TensorFill[T]) BuildGraph(ctx *context.Context) error {
 
 	return nil
 }
+
+func (p *TensorMat[T]) Fill(n *number.Scalar[T]) {
+	for i := range p.Operands {
+		p.Operands[i].Value = n.Value
+	}
+}
+
+func (p *TensorMat[T]) FillData(n T) {
+	for i := range p.Operands {
+		p.Operands[i].Value = n
+	}
+}

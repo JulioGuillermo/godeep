@@ -13,7 +13,7 @@ func TestCopy(t *testing.T) {
 
 	m := tensor.NewNormRand[float32](shape...)
 	c := tensor.NewNormRand[float32](shape...)
-	r := tensor.CopyTo(m, c)
+	r := tensor.CopyTo[float32](m, c)
 
 	g, err := graph.NewGraph(r)
 	if err != nil {

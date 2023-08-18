@@ -53,3 +53,29 @@ func (p *TensorReshape[T]) BuildGraph(ctx *context.Context) error {
 
 	return nil
 }
+
+func (p *TensorMat[T]) Reshape(shape ...uint) *TensorMat[T] {
+	mulIndex := tools.GetIndexMul(shape)
+	ops := make([]*number.Scalar[T], tools.GetDataSize(shape))
+
+	min := p.GetSize()
+	if min > uint(len(ops)) {
+		min = uint(len(ops))
+	}
+
+	for i := uint(0); i < min; i++ {
+		ops[i] = &number.Scalar[T]{
+			Value: p.Operands[i].Value,
+		}
+	}
+
+	for i := min; i < p.GetSize(); i++ {
+		ops[i] = &number.Scalar[T]{}
+	}
+
+	return &TensorMat[T]{
+		Shape:    shape,
+		MulIndex: mulIndex,
+		Operands: ops,
+	}
+}

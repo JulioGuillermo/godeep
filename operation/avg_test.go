@@ -5,14 +5,13 @@ import (
 
 	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
-	"github.com/julioguillermo/godeep/tensor"
 )
 
 func TestAvg(t *testing.T) {
-	r := tensor.NewScalar[float32](0)
-	o1 := tensor.NewScalar[float32](-234)
-	o2 := tensor.NewScalar[float32](762)
-	o3 := tensor.NewScalar[float32](322)
+	r := number.NewScalar[float32](0)
+	o1 := number.NewScalar[float32](-234)
+	o2 := number.NewScalar[float32](762)
+	o3 := number.NewScalar[float32](322)
 	args := []*number.Scalar[float32]{o1, o2, o3}
 
 	oper := &operation.Avg[float32]{

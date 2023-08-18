@@ -42,3 +42,17 @@ func (p *TensorNeg[T]) BuildGraph(ctx *context.Context) error {
 
 	return nil
 }
+
+func (p *TensorMat[T]) Neg() *TensorMat[T] {
+	ops := make([]*number.Scalar[T], p.GetSize())
+	for i := range ops {
+		ops[i] = &number.Scalar[T]{
+			Value: -p.Operands[i].Value,
+		}
+	}
+	return &TensorMat[T]{
+		Shape:    p.GetShape(),
+		MulIndex: p.GetMulIndex(),
+		Operands: ops,
+	}
+}

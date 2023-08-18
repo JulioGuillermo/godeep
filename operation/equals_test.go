@@ -3,14 +3,14 @@ package operation_test
 import (
 	"testing"
 
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/operation"
-	"github.com/julioguillermo/godeep/tensor"
 )
 
 func TestEquals(t *testing.T) {
-	r := tensor.NewScalar[float32](0)
-	a := tensor.NewScalar[float32](234)
-	b := tensor.NewScalar[float32](876)
+	r := number.NewScalar[float32](0)
+	a := number.NewScalar[float32](234)
+	b := number.NewScalar[float32](876)
 
 	oper := &operation.Equals[float32]{
 		Scalar: r,

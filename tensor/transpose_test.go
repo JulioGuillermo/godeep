@@ -74,3 +74,64 @@ func TestMultiDimTranspose(t *testing.T) {
 		}
 	}
 }
+
+func TestHotUniDimTranspose(t *testing.T) {
+	m := tensor.NewFromValues(
+		[]float32{1, 2, 3, 4, 5, 6, 7},
+		7,
+	)
+	R := []float32{1, 2, 3, 4, 5, 6, 7}
+
+	trans, err := m.Transpose()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(trans)
+
+	err = tools.GetEqShapeErr(
+		"Testing transpose result shape",
+		trans.GetShape(),
+		[]uint{7},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, o := range trans.GetData() {
+		if o != R[i] {
+			t.Fatalf("Fail at %d => %f and %f", i, R[i], o)
+		}
+	}
+}
+
+func TestHotMultiDimTranspose(t *testing.T) {
+	m := tensor.NewFromValues(
+		[]float32{2, 3, 4, 6, 7, 5, 3, 2, 5, 85, 4, 7, 7, 8, 9, 5, 8, 5, 6, 4, 3, 5, 7, 4},
+		1,
+		3,
+		2,
+		4,
+	)
+	R := []float32{2, 5, 8, 7, 7, 3, 3, 85, 5, 5, 8, 5, 4, 4, 6, 3, 9, 7, 6, 7, 4, 2, 5, 4}
+
+	trans, err := m.Transpose()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(trans)
+
+	err = tools.GetEqShapeErr(
+		"Testing transpose result shape",
+		trans.GetShape(),
+		[]uint{4, 2, 3, 1},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, o := range trans.GetData() {
+		if o != R[i] {
+			t.Fatalf("Fail at %d => %f and %f", i, R[i], o)
+		}
+	}
+}

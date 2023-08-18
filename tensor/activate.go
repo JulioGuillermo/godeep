@@ -44,3 +44,17 @@ func (p *TensorActivate[T]) BuildGraph(ctx *context.Context) error {
 
 	return nil
 }
+
+func (p *TensorMat[T]) Activate(f operation.Function[T]) *TensorMat[T] {
+	ops := make([]*number.Scalar[T], p.GetSize())
+	for i := range ops {
+		ops[i] = &number.Scalar[T]{
+			Value: f(p.Operands[i].Value),
+		}
+	}
+	return &TensorMat[T]{
+		Shape:    p.GetShape(),
+		MulIndex: p.GetMulIndex(),
+		Operands: ops,
+	}
+}

@@ -4,14 +4,15 @@ import (
 	"testing"
 
 	"github.com/julioguillermo/godeep/graph"
+	"github.com/julioguillermo/godeep/number"
 	"github.com/julioguillermo/godeep/tensor"
 )
 
 func TestAddScalar(t *testing.T) {
 	m := tensor.NewNormRand[float32](50, 50, 20)
-	s := tensor.NewScalar[float32](30)
+	s := number.NewScalar[float32](30)
 
-	r := tensor.AddScalar(m, s)
+	r := tensor.AddScalar[float32](m, s)
 	g, err := graph.NewGraph(r)
 	if err != nil {
 		t.Fatal(err)
@@ -29,9 +30,9 @@ func TestAddScalar(t *testing.T) {
 
 func TestSubScalar(t *testing.T) {
 	m := tensor.NewNormRand[float32](50, 50, 20)
-	s := tensor.NewScalar[float32](30)
+	s := number.NewScalar[float32](30)
 
-	r := tensor.SubScalar(m, s)
+	r := tensor.SubScalar[float32](m, s)
 	g, err := graph.NewGraph(r)
 	if err != nil {
 		t.Fatal(err)
@@ -49,9 +50,9 @@ func TestSubScalar(t *testing.T) {
 
 func TestMulScalar(t *testing.T) {
 	m := tensor.NewNormRand[float32](50, 50, 20)
-	s := tensor.NewScalar[float32](30)
+	s := number.NewScalar[float32](30)
 
-	r := tensor.MulScalar(m, s)
+	r := tensor.MulScalar[float32](m, s)
 	g, err := graph.NewGraph(r)
 	if err != nil {
 		t.Fatal(err)
@@ -69,15 +70,71 @@ func TestMulScalar(t *testing.T) {
 
 func TestDivScalar(t *testing.T) {
 	m := tensor.NewNormRand[float32](50, 50, 20)
-	s := tensor.NewScalar[float32](30)
+	s := number.NewScalar[float32](30)
 
-	r := tensor.DivScalar(m, s)
+	r := tensor.DivScalar[float32](m, s)
 	g, err := graph.NewGraph(r)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	g.Exec()
+
+	d := m.GetData()
+	for i, v := range r.GetData() {
+		if v != d[i]/s.Value {
+			t.Fatal(v, "!=", d[i]/s.Value, "=>", d[i], s.Value)
+		}
+	}
+}
+
+func TestHotAddScalar(t *testing.T) {
+	m := tensor.NewNormRand[float32](50, 50, 20)
+	s := number.NewScalar[float32](30)
+
+	r := m.AddScalar(s)
+
+	d := m.GetData()
+	for i, v := range r.GetData() {
+		if v != d[i]+s.Value {
+			t.Fatal(v, "!=", d[i]+s.Value, "=>", d[i], s.Value)
+		}
+	}
+}
+
+func TestHotSubScalar(t *testing.T) {
+	m := tensor.NewNormRand[float32](50, 50, 20)
+	s := number.NewScalar[float32](30)
+
+	r := m.SubScalar(s)
+
+	d := m.GetData()
+	for i, v := range r.GetData() {
+		if v != d[i]-s.Value {
+			t.Fatal(v, "!=", d[i]-s.Value, "=>", d[i], s.Value)
+		}
+	}
+}
+
+func TestHotMulScalar(t *testing.T) {
+	m := tensor.NewNormRand[float32](50, 50, 20)
+	s := number.NewScalar[float32](30)
+
+	r := m.MulScalar(s)
+
+	d := m.GetData()
+	for i, v := range r.GetData() {
+		if v != d[i]*s.Value {
+			t.Fatal(v, "!=", d[i]*s.Value, "=>", d[i], s.Value)
+		}
+	}
+}
+
+func TestHotDivScalar(t *testing.T) {
+	m := tensor.NewNormRand[float32](50, 50, 20)
+	s := number.NewScalar[float32](30)
+
+	r := m.DivScalar(s)
 
 	d := m.GetData()
 	for i, v := range r.GetData() {

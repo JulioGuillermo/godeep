@@ -37,94 +37,6 @@ func DotAt[T types.Number](a, b Tensor[T], dimA, dimB uint) Tensor[T] {
 	}
 }
 
-/*
-func (p *TensorDotProduct[T]) buildMatVec(m, v Tensor[T], invert bool, ctx *context.Context) error {
-	shape := m.GetShape()
-	if invert {
-		if shape[len(shape)-2] != v.GetSize() {
-			return errors.FmtNeuralError(
-				"Invalid dot product on matrix with shape[-2] %d and a vector of size %d",
-				shape[len(shape)-2],
-				v.GetSize(),
-			)
-		}
-	} else {
-		if shape[len(shape)-1] != v.GetSize() {
-			return errors.FmtNeuralError(
-				"Invalid dot product on matrix with shape[-1] %d and a vector of size %d",
-				shape[len(shape)-1],
-				v.GetSize(),
-			)
-		}
-	}
-
-	p.Shape = shape[:len(shape)-1]
-	if invert {
-		p.Shape[len(p.Shape)-1] = shape[len(shape)-1]
-	}
-	p.MulIndex = tools.GetIndexMul(p.Shape)
-	p.Operands = make([]*number.Scalar[T], tools.GetDataSize(p.Shape))
-
-	return p.buildMatVecRecursive(ctx, invert, m, v, 0, 0, []uint{})
-}
-
-// TODO better way...
-func (p *TensorDotProduct[T]) buildMatVecRecursive(
-	ctx *context.Context,
-	invert bool,
-	m, v Tensor[T],
-	dim, index uint,
-	oIndex []uint,
-) error {
-	if dim == uint(len(p.Shape)) {
-		ops := make([]*number.Scalar[T], v.GetSize())
-		for i, vo := range v.GetOperands() {
-			var ind []uint
-			if invert {
-				ind = make([]uint, len(oIndex)+1)
-				copy(ind, oIndex)
-				ind[len(ind)-1] = ind[len(ind)-2]
-				ind[len(ind)-2] = uint(i)
-			} else {
-				ind = append(oIndex, uint(i))
-			}
-			o, e := m.GetOperand(ind...)
-			if e != nil {
-				return e
-			}
-			mul := &number.Scalar[T]{}
-			ops[i] = mul
-			ctx.Push(&operation.Mul[T]{
-				Scalar: mul,
-				A:      vo,
-				B:      o,
-			})
-		}
-
-		sum := &number.Scalar[T]{}
-		p.Operands[index] = sum
-		ctx.Push(&operation.Sum[T]{
-			Scalar: sum,
-			Args:   ops,
-		})
-		return nil
-	}
-	for i := uint(0); i < p.Shape[dim]; i++ {
-		err := p.buildMatVecRecursive(
-			ctx,
-			invert,
-			m, v,
-			dim+1,
-			index+i*p.MulIndex[dim],
-			append(oIndex, i),
-		)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
-
 func (p *TensorDotProduct[T]) BuildGraph(ctx *context.Context) error {
 	if p.builded {
 		return nil
@@ -169,14 +81,6 @@ func (p *TensorDotProduct[T]) BuildGraph(ctx *context.Context) error {
 		return p.buildVector(ctx)
 	}
 
-	//if len(p.B.GetShape()) == 1 {
-	//	return p.buildMatVec(p.A, p.B, false, ctx)
-	//}
-
-	//if len(p.A.GetShape()) == 1 {
-	//	return p.buildMatVec(p.B, p.A, true, ctx)
-	//}
-
 	p.Shape = append(sha[:p.Da], sha[p.Da+1:]...)
 	p.D = uint(len(p.Shape))
 	p.Shape = append(p.Shape, shb[:p.Db]...)
@@ -200,46 +104,7 @@ func (p *TensorDotProduct[T]) BuildGraph(ctx *context.Context) error {
 	}
 
 	return nil
-	// return p.buildRecursiveDot(ctx, 0, []uint{}, []uint{}, []uint{})
 }
-
-//func (p *TensorDotProduct[T]) buildRecursiveDot(
-//	ctx *context.Context,
-//	dim uint,
-//	index []uint,
-//	indexA []uint,
-//	indexB []uint,
-//) error {
-//	if dim == uint(len(p.Shape)) {
-//		return p.buildLastDim(ctx, index, indexA, indexB)
-//	}
-//	for i := uint(0); i < p.Shape[dim]; i++ {
-//		if dim < p.D {
-//			err := p.buildRecursiveDot(
-//				ctx,
-//				dim+1,
-//				append(index, i),
-//				append(indexA, i),
-//				indexB,
-//			)
-//			if err != nil {
-//				return err
-//			}
-//		} else {
-//			err := p.buildRecursiveDot(
-//				ctx,
-//				dim+1,
-//				append(index, i),
-//				indexA,
-//				append(indexB, i),
-//			)
-//			if err != nil {
-//				return err
-//			}
-//		}
-//	}
-//	return nil
-//}
 
 func (p *TensorDotProduct[T]) buildLastDim(
 	ctx *context.Context,
@@ -329,4 +194,139 @@ func (p *TensorDotProduct[T]) buildVector(ctx *context.Context) error {
 	p.MulIndex = []uint{1}
 
 	return nil
+}
+
+func (p *TensorMat[T]) Dot(m *TensorMat[T]) (*TensorMat[T], error) {
+	d1 := uint(len(p.Shape) - 1)
+	d2 := uint(len(m.Shape) - 1)
+	if d2 > 0 {
+		d2--
+	}
+
+	return p.DotAt(m, d1, d2)
+}
+
+func (p *TensorMat[T]) DotAt(m *TensorMat[T], dim1, dim2 uint) (*TensorMat[T], error) {
+	sha := p.GetShape()
+	shb := m.GetShape()
+
+	if len(sha) == 0 || len(shb) == 0 {
+		return nil, errors.FmtNeuralError("Can not do dot to an empty tensor")
+	}
+
+	if sha[dim1] != shb[dim2] {
+		return nil, errors.FmtNeuralError(
+			"Invalid dot operation to tensors with shape[%d] %d and shape[%d] %d",
+			dim1,
+			sha[dim1],
+			dim2,
+			shb[dim2],
+		)
+	}
+
+	if len(sha) == 1 && len(shb) == 1 {
+		return p.DotVector(m)
+	}
+
+	size := sha[dim1]
+	shape := append(sha[:dim1], sha[dim1+1:]...)
+	dim := uint(len(shape))
+	shape = append(shape, shb[:dim2]...)
+	shape = append(shape, shb[dim2+1:]...)
+
+	mulIndex := tools.GetIndexMul(shape)
+
+	ops := make([]*number.Scalar[T], tools.GetDataSize(shape))
+	for i := range ops {
+		ops[i] = &number.Scalar[T]{Value: 0}
+	}
+
+	for i := range ops {
+		idx := tools.ReverseIndex(mulIndex, shape, uint(i))
+		idxA := idx[:dim]
+		idxB := idx[dim:]
+		err := p.dotLastDim(m, ops, size, dim1, dim2, uint(i), idxA, idxB)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    shape,
+		MulIndex: mulIndex,
+		Operands: ops,
+	}, nil
+}
+
+func (p *TensorMat[T]) dotLastDim(
+	m *TensorMat[T],
+	ops []*number.Scalar[T],
+	size,
+	dim1, dim2,
+	index uint,
+	indexA []uint,
+	indexB []uint,
+) error {
+	indA := make([]uint, len(indexA)+1)
+	indB := make([]uint, len(indexB)+1)
+	for i := uint(0); i < uint(len(indexA)); i++ {
+		if i < dim1 {
+			indA[i] = indexA[i]
+		} else {
+			indA[i+1] = indexA[i]
+		}
+	}
+	for i := uint(0); i < uint(len(indexB)); i++ {
+		if i < dim2 {
+			indB[i] = indexB[i]
+		} else {
+			indB[i+1] = indexB[i]
+		}
+	}
+
+	for i := uint(0); i < size; i++ {
+		indA[dim1] = i
+		indB[dim2] = i
+
+		a, err := p.GetOperand(indA...)
+		if err != nil {
+			return nil
+		}
+
+		b, err := m.GetOperand(indB...)
+		if err != nil {
+			return err
+		}
+
+		ops[index].Value += a.Value * b.Value
+	}
+	return nil
+}
+
+func (p *TensorMat[T]) DotVector(m *TensorMat[T]) (*TensorMat[T], error) {
+	if p.GetSize() != m.GetSize() {
+		return nil, errors.FmtNeuralError(
+			"Dot product fail on vectors with size %d and %d",
+			p.GetSize(),
+			m.GetSize(),
+		)
+	}
+	op1 := p.GetOperands()
+	op2 := m.GetOperands()
+	ops := make([]*number.Scalar[T], len(op1))
+	for i := range ops {
+		ops[i] = &number.Scalar[T]{
+			Value: op1[i].Value * op2[i].Value,
+		}
+	}
+
+	o := &number.Scalar[T]{
+		Value: tools.Sum[T](ops),
+	}
+
+	return &TensorMat[T]{
+		Shape:    []uint{1},
+		MulIndex: []uint{1},
+		Operands: []*number.Scalar[T]{o},
+	}, nil
 }

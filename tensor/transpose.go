@@ -49,34 +49,32 @@ func (p *TensorTanspose[T]) BuildGraph(ctx *context.Context) error {
 	}
 
 	return nil
-	// return p.transposeRecursive(0, 0, []uint{})
 }
 
-// Función auxiliar recursiva para calcular la traspuesta de la matriz
-// TODO better way...
-//func (p *TensorTanspose[_]) transposeRecursive(dim, index uint, oIndex []uint) error {
-//	if dim == uint(len(p.Shape)) {
-//		size := len(oIndex)
-//		rIndex := make([]uint, size)
-//		for i, ii := range oIndex {
-//			rIndex[size-i-1] = ii
-//		}
-//		o, err := p.T.GetOperand(rIndex...)
-//		if err != nil {
-//			return err
-//		}
-//		p.Operands[index] = o
-//		return nil
-//	}
-//	for i := uint(0); i < p.Shape[dim]; i++ {
-//		err := p.transposeRecursive(
-//			dim+1,
-//			index+i*p.MulIndex[dim],
-//			append(oIndex, i),
-//		)
-//		if err != nil {
-//			return err
-//		}
-//	}
-//	return nil
-//}
+func (p *TensorMat[T]) Transpose() (*TensorMat[T], error) {
+	dims := len(p.Shape)
+	shape := make([]uint, dims)
+	for i := range shape {
+		shape[i] = p.Shape[dims-i-1]
+	}
+	mulIndex := tools.GetIndexMul(shape)
+
+	ops := make([]*number.Scalar[T], p.GetSize())
+	for i := range ops {
+		idx := tools.ReverseIndex(mulIndex, shape, uint(i))
+		tIdx := tools.GetInvertedIndex(idx)
+		o, err := p.GetOperand(tIdx...)
+		if err != nil {
+			return nil, err
+		}
+		ops[i] = &number.Scalar[T]{
+			Value: o.Value,
+		}
+	}
+
+	return &TensorMat[T]{
+		Shape:    shape,
+		MulIndex: mulIndex,
+		Operands: ops,
+	}, nil
+}
