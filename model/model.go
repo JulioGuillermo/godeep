@@ -53,6 +53,25 @@ func FromModels[T types.Number](models ...*Model[T]) (*Model[T], error) {
 	if len(models) == 0 {
 		return nil, errors.FmtNeuralError("Can not create a model from 0 models")
 	}
+
+	for i := 1; i < len(models); i++ {
+		if models[i].FirstLayer.GetPrelayer() != models[i-1].LastLayer {
+			models[i].FirstLayer.Connect(models[i-1].LastLayer)
+		}
+	}
+
+	for i := 0; i < len(models); i++ {
+		if models[i].GraphFeedForward == nil {
+			models[i].Compile()
+		}
+	}
+
+	for i := len(models) - 1; i >= 0; i-- {
+		if models[i].GraphBackPropagation == nil {
+			models[i].CompileBackPropagation()
+		}
+	}
+
 	m := NewModel[T]()
 
 	size := len(models)
